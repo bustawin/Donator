@@ -20,6 +20,12 @@ else
         exit 1
 fi
 
+#Carga el fichero de configuración personal
+if [ -e ${HOME}/config.ini ]
+then
+		. ${HOME}/config.ini
+fi
+
 # Compruebo que existe el fichero con la traducción de los menús
 # que corresponde al parámetro pasado.
 if [ ! -f ${ETC_DIR}/menu_${1}.properties ]
@@ -68,10 +74,10 @@ echo ""
 echo "$splash_1"
 tput sgr0
 tput cup 13 1
-echo "$splash_2"
-sleep 1; tput cup 13 49; echo "2"
-sleep 1; tput cup 13 49; echo "1"
-sleep 1
+#echo "$splash_2"
+#sleep 1; tput cup 13 49; echo "2"
+#sleep 1; tput cup 13 49; echo "1"
+#sleep 1
 
 # Ejecutamos la herramienta lshw y dejamos el resultado en un fichero
 # en el directorio temporal. Comprobamos que se ha generado.
@@ -84,26 +90,32 @@ fi
 #
 # TIPUS D'EQUIP
 ####################################################################
-EQUIP_TYPE="0"
-choice="0"
-	tput clear
-	tput cup 3 17
-	tput setaf 3 
-	echo "${menu_2_title}"
-	tput setaf 1 
-	tput cup 18 5
-	tput sgr0
-	tput cup 7 5
-	echo "${menu_2_1}"
-	tput cup 10 5
-	echo "${menu_2_2}"
-	tput cup 16 5
-	read -p "${menu_2_3} " choice
+if [[ -z "$INI_EQUIP_TYPE" || "$INI_EQUIP_TYPE" == 0 ]]
+then
+	EQUIP_TYPE="0"
+	choice="0"
+		tput clear
+		tput cup 3 17
+		tput setaf 3 
+		echo "${menu_2_title}"
+		tput setaf 1 
+		tput cup 18 5
+		tput sgr0
+		tput cup 7 5
+		echo "${menu_2_1}"
+		tput cup 10 5
+		echo "${menu_2_2}"
+		tput cup 16 5
+		read -p "${menu_2_3} " choice
 
-	if [ "${choice}" = "1" ] || [ "${choice}" = "2" ] || [ "${choice}" = "3" ] || [ "${choice}" = "4" ]
-	then
-		EQUIP_TYPE=$choice
-	fi
+		if [ "${choice}" = "1" ] || [ "${choice}" = "2" ] || [ "${choice}" = "3" ] || [ "${choice}" = "4" ] || [ "${choice}" = "5" ] || [ "${choice}" = "6" ]
+		then
+			EQUIP_TYPE=$choice
+		fi
+else
+	EQUIP_TYPE="$INI_EQUIP_TYPE";
+fi
+
 #
 # INFORMACIO ADDICIONAL EQUIP
 ####################################################################
@@ -116,16 +128,38 @@ choice="0"
 	tput sgr0
 	tput cup 7 5
 	echo "${menu_3_1}"
-	tput cup 10 5
-	read -p "${menu_3_2} " ID_DONANT
-	tput cup 13 5
-	read -p "${menu_3_3} " ID_2
-	tput cup 16 5 
-	read -p "${menu_3_4} " INITIAL_TIME
-	tput cup 19 5
-	read -p "${menu_3_5} " COMMENTS
+	if [[ -z "$ASK_DONOR_ID" || "$ASK_DONOR_ID" == "Y" ]]
+	then
+		tput cup 10 5
+		read -p "${menu_3_2} " ID_DONANT
+	fi
+	if [[ -z "$ASK_ID_2" || "$ASK_ID_2" == "Y" ]]
+	then
+		tput cup 13 5
+		read -p "${menu_3_3} " ID_2
+	fi
+	if [[ -z "$ASK_INIT_TIME" || "$ASK_INIT_TIME" == "Y" ]]
+	then
+		tput cup 16 5 
+		read -p "${menu_3_4} " INITIAL_TIME
+	fi
+	if [[ -z "$ASK_LABEL" || "$ASK_LABEL" == "Y" ]]
+	then
+		tput cup 19 5
+		read -p "${menu_3_6} " LABEL
+	fi
+	if [[ -z "$ASK_OBS" || "$ASK_OBS" == "Y" ]]
+	then
+		tput cup 22 5
+		read -p "${menu_3_5} " COMMENTS
+	fi
 
-INITIAL_TIME=`date +%s -d $INITIAL_TIME`
+if [[ -n "$INITIAL_TIME" ]]
+then
+	INITIAL_TIME=`date +%s -d $INITIAL_TIME`
+else
+	INITIAL_TIME="0"
+fi
 if [[ "$INITIAL_TIME" == *invalid* ]]
 then
 	INITIAL_TIME="0"
@@ -189,6 +223,7 @@ XML="${XML}\n\t<id>0${ID}</id>"
 XML="${XML}\n\t<id2>1${ID2}</id2>"
 XML="${XML}\n\t<ID_donant>${ID_DONANT}</ID_donant>"
 XML="${XML}\n\t<ID_2>${ID_2}</ID_2>"
+XML="${XML}\n\t<LABEL>${LABEL}</LABEL>"
 XML="${XML}\n\t<INITIAL_TIME>${INITIAL_TIME}</INITIAL_TIME>"
 XML="${XML}\n\t<INITIAL_DONATOR_TIME>${INITIAL_DONATOR_TIME}</INITIAL_DONATOR_TIME>"
 XML="${XML}\n\t<comments>${COMMENTS}</comments>"
@@ -639,49 +674,63 @@ XML="${XML}\n\t</caracteristiques>"
 
 
 
-
-echo -e ${XML} >> /tmp/XMLEEE.xml
-#
-# USER/PASS DE LA WEB
-####################################################################
-error=""
-OK=0
-
-while [ ${OK} != 1 ]
-do
-	tput clear
-	tput cup 3 17
-	tput setaf 3 
-	echo "${menu_5_title}"
-	tput setaf 1 
-	tput cup 18 5
-	echo "${error}"
-	tput sgr0
-	tput cup 7 5
-	echo "${menu_5_1}"
-	tput cup 8 5
-	echo "${menu_5_2}"
-	tput cup 10 5
-	read -p "${menu_5_3} " USER
-	stty -echo
-	tput cup 12 5 	#CEntra per ppantalla
-	read -p "${menu_5_4} " PASS; echo
-	tput cup 13 5
-	read -p "${menu_5_5} " RPASS; echo
-	tput sgr0
-	stty echo
-	if [ "${PASS}" != "${RPASS}" ] && [ "${PASS}" = "" ]
+if [[ -n "$INI_SAVE_XML" && "$INI_SAVE_XML" == "Y" ]]
 	then
-		error=${passNoOK}
+	echo -e ${XML} >> ${HOME}/xml_unencrypted.xml
+fi
+
+if [[ -n "$OFFLINE" && "$OFFLINE" == "Y" ]]
+then
+	echo "Offline mode."
+else
+	if [[ -n "$USERNAME" && -n "$PASSWORD" ]]
+	then
+		USER="$USERNAME"
+		PASS="$PASSWORD"
 	else
-		if [ "${USER}" != "" ]
-		then
-			OK=1
-		else
-			error=${userNoOK}
-		fi
+		#
+		# USER/PASS DE LA WEB
+		####################################################################
+		error=""
+		OK=0
+
+		while [ ${OK} != 1 ]
+		do
+			tput clear
+			tput cup 3 17
+			tput setaf 3 
+			echo "${menu_5_title}"
+			tput setaf 1 
+			tput cup 18 5
+			echo "${error}"
+			tput sgr0
+			tput cup 7 5
+			echo "${menu_5_1}"
+			tput cup 8 5
+			echo "${menu_5_2}"
+			tput cup 10 5
+			read -p "${menu_5_3} " USER
+			stty -echo
+			tput cup 12 5 	#CEntra per ppantalla
+			read -p "${menu_5_4} " PASS; echo
+			tput cup 13 5
+			read -p "${menu_5_5} " RPASS; echo
+			tput sgr0
+			stty echo
+			if [ "${PASS}" != "${RPASS}" ] && [ "${PASS}" = "" ]
+			then
+				error=${passNoOK}
+			else
+				if [ "${USER}" != "" ]
+				then
+					OK=1
+				else
+					error=${userNoOK}
+				fi
+			fi
+		done
 	fi
-done
+fi
 
 # Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
 END_DONATOR_TIME=`date +%s`
@@ -690,20 +739,23 @@ XML="${XML}\n</equip>"
 # Importamos la clave con la que encriptaremos los ficheros
 gpg --yes --import ${ETC_DIR}/key.bin 2>/dev/null
 
-# El fichero de login tendrá el mismo nombre que el fichero XML
-# pero con extension .login en vez de .xml
-FITXER_LOGIN=`echo ${FITXER} | sed -e 's/\.xml/\.login/g'`
+if [[ -z "$OFFLINE" || "$OFFLINE" == "N" ]]
+then
+	# El fichero de login tendrá el mismo nombre que el fichero XML
+	# pero con extension .login en vez de .xml
+	FITXER_LOGIN=`echo ${FITXER} | sed -e 's/\.xml/\.login/g'`
 
-# Guardamos el usuario, password y fecha de recogida
-echo ${USER} >> ${FITXER_LOGIN}
-echo ${PASS} >> ${FITXER_LOGIN}
-echo ${DATA_LIMIT_DONANT} >> ${FITXER_LOGIN}
+	# Guardamos el usuario, password y fecha de recogida
+	echo ${USER} >> ${FITXER_LOGIN}
+	echo ${PASS} >> ${FITXER_LOGIN}
+	echo ${DATA_LIMIT_DONANT} >> ${FITXER_LOGIN}
+
+
+	# Encriptamos el fichero de login y borramos el no encriptado
+	gpg --no-tty --yes --trust-model always --output ${FITXER_LOGIN}.out --encrypt --recipient ${EMAIL} ${FITXER_LOGIN} 2>/dev/null
+	rm ${FITXER_LOGIN}
+fi
 echo -e ${XML} >> ${FITXER}.out     ##lINEA EXTRA, BORRAR AL TORNAR A FER ENCRIPTATGE
-
-# Encriptamos el fichero de login y borramos el no encriptado
-gpg --no-tty --yes --trust-model always --output ${FITXER_LOGIN}.out --encrypt --recipient ${EMAIL} ${FITXER_LOGIN} 2>/dev/null
-rm ${FITXER_LOGIN}
-
 # Encriptamos el fichero xml
 #echo -e ${XML} | gpg --no-tty --yes --trust-model always --output ${FITXER}.out --encrypt --recipient ${EMAIL} - 2>/dev/null
 
@@ -720,9 +772,11 @@ then
 	chown -R ${SUDO_USER}:${SUDO_GROUP} ${HOME}/.gnupg
 fi
 
-#
-# SUBIR EL FICHERO XML ENCRIPTADO AL SFTP DESTINO
-##############################################################
+if [[ -z "$OFFLINE" || "$OFFLINE" == "N" ]]
+then
+	#
+	# SUBIR EL FICHERO XML ENCRIPTADO AL SFTP DESTINO
+	##############################################################
 lftp -p ${PORT_SFTP} -u ${USER_SFTP},${PASS_SFTP} sftp://${HOST_SFTP} << EOF
 cd upload
 put ${FITXER_LOGIN}.out
@@ -730,8 +784,10 @@ put ${FITXER}.out
 bye
 EOF
 
-mv ${FITXER}.out ${FITXER}
+	
 rm ${FITXER_LOGIN}.out
+fi
+mv ${FITXER}.out ${FITXER}
 
 # Pantalla final del programa
 tput clear
@@ -746,13 +802,25 @@ echo "                / /_/ (  <_> )   |  \\/ __ \\_|  |(  <_> )  | \\/         
 echo "                \\____ |\\____/|___|  (____  /|__| \\____/|__|                   "
 echo "                     \\/           \\/     \\/                                   "
 echo ""
-echo "$final_1"
-echo "$final_2"
-echo "$final_3"
+if [[ -n "$OFFLINE" && "$OFFLINE" == *Y* ]]
+then
+	echo "$final2_1"
+else
+	echo "$final_1"
+	echo "$final_2"
+	echo "$final_3"
+fi
 echo "$final_4"
-echo ""
-echo ""
-echo ""
 tput sgr0
+
+# Carga de movexml
+if [[ -e ${BIN_DIR}/movexml.sh ]]
+then
+	if [[ -z "$INI_MOVE" || "$INI_MOVE" == "Y" ]]
+	then
+		echo "$final_4_m"
+        . ${BIN_DIR}/movexml.sh
+    fi
+fi
 
 exit 0
