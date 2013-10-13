@@ -1,0 +1,758 @@
+#!/bin/bash
+
+#tiempo de inicio del registro en Donator
+INITIAL_DONATOR_TIME=`date +%s`
+
+# Compruebo el idioma por defecto del SO
+LANG=`locale | grep LANG | grep -v LANGUAGE | cut -d "=" -f 2 | cut -d "_" -f 1`
+
+# Declaración de directorios
+BIN_DIR="$( cd "$( dirname "$0" )" && pwd )"
+HOME_DONATOR=`echo ${BIN_DIR} | sed -e 's/\/bin//g'`
+ETC_DIR=${HOME_DONATOR}/etc
+
+# Carga del fichero de configuración
+if [ -e ${ETC_DIR}/donator.cfg ]
+then
+        . ${ETC_DIR}/donator.cfg
+else
+        echo $configuracionNoOK 
+        exit 1
+fi
+
+# Compruebo que existe el fichero con la traducción de los menús
+# que corresponde al parámetro pasado.
+if [ ! -f ${ETC_DIR}/menu_${1}.properties ]
+then
+	if [ ! -f ${ETC_DIR}/menu_${LANG}.properties ]
+	then
+		# En caso de que no se haya pasado el parametro o la
+		# traducción no exista se muestra el uso del programa.
+		echo "Usage: info.sh [lang]"
+		echo "       lang: es/ca/en"
+		echo "       If no lang parameter, OS language is loaded"
+		exit 1
+	else
+		# Carga de los literales del menú en el idioma por
+		# defecto del SO
+		. ${ETC_DIR}/menu_${LANG}.properties
+	fi
+else
+	# Carga de los literales del menú en el idioma pasado por
+	# parámetro.
+	. ${ETC_DIR}/menu_${1}.properties
+fi
+
+# Comprobación del usuario con el que se ha ejecutado la herramienta.
+# Se necesitan permisos de root.
+user=`whoami`
+if [ $user != "root" ]
+then
+	echo $permisos
+	exit 1
+fi
+
+# Splash screen del programa
+tput clear
+tput setaf 1
+echo ""
+echo ""
+echo ""
+echo "                    .___                     __                               "
+echo "                  __| _/____   ____ _____  _/  |_ ___________                 "
+echo "                 / __ |/  _ \\ /    \\\\__  \\ \\   __|  _ \\_  __ \\                "
+echo "                / /_/ (  <_> )   |  \\/ __ \\_|  |(  <_> )  | \\/                "
+echo "                \\____ |\\____/|___|  (____  /|__| \\____/|__|                   "
+echo "                     \\/           \\/     \\/                                   "
+echo ""
+echo "$splash_1"
+tput sgr0
+tput cup 13 1
+echo "$splash_2"
+sleep 1; tput cup 13 49; echo "2"
+sleep 1; tput cup 13 49; echo "1"
+sleep 1
+
+# Ejecutamos la herramienta lshw y dejamos el resultado en un fichero
+# en el directorio temporal. Comprobamos que se ha generado.
+lshw > /tmp/lshw
+if [ ! -f /tmp/lshw ]
+then
+	echo ${nofile}
+	exit 1
+fi
+#
+# TIPUS D'EQUIP
+####################################################################
+EQUIP_TYPE="0"
+choice="0"
+	tput clear
+	tput cup 3 17
+	tput setaf 3 
+	echo "${menu_2_title}"
+	tput setaf 1 
+	tput cup 18 5
+	tput sgr0
+	tput cup 7 5
+	echo "${menu_2_1}"
+	tput cup 10 5
+	echo "${menu_2_2}"
+	tput cup 16 5
+	read -p "${menu_2_3} " choice
+
+	if [ "${choice}" = "1" ] || [ "${choice}" = "2" ] || [ "${choice}" = "3" ] || [ "${choice}" = "4" ]
+	then
+		EQUIP_TYPE=$choice
+	fi
+#
+# INFORMACIO ADDICIONAL EQUIP
+####################################################################
+	tput clear
+	tput cup 3 17
+	tput setaf 3 
+	echo "${menu_3_title}"
+	tput setaf 1 
+	tput cup 18 5
+	tput sgr0
+	tput cup 7 5
+	echo "${menu_3_1}"
+	tput cup 10 5
+	read -p "${menu_3_2} " ID_DONANT
+	tput cup 13 5
+	read -p "${menu_3_3} " ID_2
+	tput cup 16 5 
+	read -p "${menu_3_4} " INITIAL_TIME
+	tput cup 19 5
+	read -p "${menu_3_5} " COMMENTS
+
+INITIAL_TIME=`date +%s -d $INITIAL_TIME`
+if [[ "$INITIAL_TIME" == *invalid* ]]
+then
+	INITIAL_TIME="0"
+fi
+
+
+# Buscamos la dirección MAC, si existen varias seleccionamos la primera
+ID=`grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' /tmp/lshw 2>/dev/null | sed s/://g | head -1`
+
+# Buscamos el número de serie del fabricante
+FIN=`grep "\*-" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
+SERIAL1=`head -n +${FIN} /tmp/lshw 2>/dev/null | grep serial | cut -d':' -f2`
+
+# Buscamos el número de serie de la placa base
+INI=`grep "\*-core" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
+FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+SERIAL2=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | awk {'print $2'}`
+
+# Buscamos el número de serie de la CPU, si existen varios seleccionamos el primero
+INI=`grep "\*-cpu" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
+FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+SERIAL3=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | awk {'print $2'}`
+
+# Buscamos el número de serie de la RAM, si existen varios seleccionamos el primero
+INI=`grep "\*-memory" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
+FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | grep -v "bank" | tail -1 | cut -d':' -f1`
+SERIAL4=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | head -1 | awk {'print $2'}`
+
+# Buscamos el número de serie del disco duro, si existen varios seleccionamos el primero
+INI=`grep "\*-disk" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
+FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | tail -1 | cut -d':' -f1`
+SERIAL5=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | head -1 | awk {'print $2'}`
+
+# Hacemos un checksum con los 5 número de serie y lo utilizamos como ID secundario
+ID2=`echo ${SERIAL1} ${SERIAL2} ${SERIAL3} ${SERIAL4} ${SERIAL5} | cksum | awk {'print $1'}`
+# Añadimos 0 hasta llegar a los 12 dígitos
+while [ ${#ID2} -lt 12 ]
+do
+	ID2="0${ID2}"
+done
+
+# Si no existe un ID primeario, se usa el ID secundario como nombre de archivo
+if [ -n "${ID}" ]
+then
+	# Para diferenciar si el nombre del archivo proviene de un ID primario o secundario,
+	# en caso del primario se añade un 0 como dígito inicial del nombre.
+	FITXER=`echo 0${ID}.xml`
+else
+	# En caso del secundario, se utiliza 000000000000 como id primerario y se añade un 1 como
+	# dígito inicial del nombre de archivo.
+	ID="000000000000"
+	FITXER=`echo 1${ID2}.xml`
+fi
+
+# Se crea la estructura y datos del XML y se van añadiendo a una variable
+XML="<equip>"
+#
+# ID's
+#####################################################################
+XML="${XML}\n\t<id>0${ID}</id>"
+XML="${XML}\n\t<id2>1${ID2}</id2>"
+XML="${XML}\n\t<ID_donant>${ID_DONANT}</ID_donant>"
+XML="${XML}\n\t<ID_2>${ID_2}</ID_2>"
+XML="${XML}\n\t<INITIAL_TIME>${INITIAL_TIME}</INITIAL_TIME>"
+XML="${XML}\n\t<INITIAL_DONATOR_TIME>${INITIAL_DONATOR_TIME}</INITIAL_DONATOR_TIME>"
+XML="${XML}\n\t<comments>${COMMENTS}</comments>"
+XML="${XML}\n\t<type>${EQUIP_TYPE}</type>"
+#
+# SERIALS
+#####################################################################
+XML="${XML}\n\t<serials>"
+XML="${XML}\n\t\t<serial_fab>${SERIAL1}</serial_fab>"
+XML="${XML}\n\t\t<serial_mot>${SERIAL2}</serial_mot>"
+XML="${XML}\n\t\t<serial_cpu>${SERIAL3}</serial_cpu>"
+XML="${XML}\n\t\t<serial_ram>${SERIAL4}</serial_ram>"
+XML="${XML}\n\t\t<serial_hdd>${SERIAL5}</serial_hdd>"
+XML="${XML}\n\t</serials>"
+
+#
+# ESTAT
+#####################################################################
+# Se almacena la fecha actual y se comprueba si el equipo tiene
+# conexión a internet
+XML="${XML}\n\t<estat>"
+DAT_ESTAT=`date +%Y-%m-%d`
+XML="${XML}\n\t\t<dat_estat>${DAT_ESTAT}</dat_estat>"
+ping www.google.es -c 1 >/dev/null 2>&1
+if [ $? -ne 0 ]
+then
+	XML="${XML}\n\t\t<online>NO</online>"
+else
+	XML="${XML}\n\t\t<online>SI</online>"
+fi
+XML="${XML}\n\t</estat>"
+
+#
+# CARACTERISTIQUES
+#####################################################################
+XML="${XML}\n\t<caracteristiques>"
+
+#
+# CPU
+#####################################################################
+XML="${XML}\n\t\t<cpu>"
+# Se busca el nombre del modelo
+NOM_CPU=`grep "model name" /proc/cpuinfo 2>/dev/null | cut -d":" -f2 | sort -u | sed "s/^ //g" | sed "s/[ \t][ \t]*/ /g"`
+XML="${XML}\n\t\t\t<nom_cpu>${NOM_CPU}</nom_cpu>"
+# Se busca el nombre del fabricante
+FAB_CPU=`grep "vendor_id" /proc/cpuinfo 2>/dev/null | cut -d":" -f2 | sort -u | sed "s/^ //g"`
+XML="${XML}\n\t\t\t<fab_cpu>${FAB_CPU}</fab_cpu>"
+# Se busca la velocidad
+SPEED_CPU=`echo ${NOM_CPU} | grep -oie "[0-9]*\.*[0-9]*[TGMK]*Hz" | grep -o "[0-9]*\.*[0-9]*"`
+XML="${XML}\n\t\t\t<speed_cpu>${SPEED_CPU}</speed_cpu>"
+# Se busca la unidad de velocidad
+UNIT_SPEED_CPU=`echo ${NOM_CPU} | grep -oie "[TGMK]*Hz"`
+XML="${XML}\n\t\t\t<unit_speed_cpu>${UNIT_SPEED_CPU}</unit_speed_cpu>"
+# Se busca el número de procesadores físicos
+NUMBER_CPU=`grep "physical id" /proc/cpuinfo 2>/dev/null | sort -u | wc -l`
+# En caso de no encontrar el string "physical id" significa que tiene un único
+# procesador.
+# Se busca el número de cores
+if [ ${NUMBER_CPU} -eq 0 ]
+then
+	NUMBER_CPU=1
+	NUMBER_CORES=`grep "processor" /proc/cpuinfo 2>/dev/null | sort -u | wc -l`
+fi
+XML="${XML}\n\t\t\t<number_cpu>${NUMBER_CPU}</number_cpu>"
+# En caso de no encontrar el número de cores se utiliza otro sistema de búsqueda
+if [ -z ${NUMBER_CORES} ]
+then
+	NUMBER_CORES=`grep "cores" /proc/cpuinfo 2>/dev/null | cut -d":" -f2 | sort -u | sed "s/^ //g"`
+fi
+XML="${XML}\n\t\t\t<number_cores>${NUMBER_CORES}</number_cores>"
+SCORE_CPU=0
+# Se calcula la puntuación de la CPU sumando el número de bogomips de cada
+# core/procesador
+for i in `grep bogomips /proc/cpuinfo 2>/dev/null | awk {'print $3'} | cut -d '.' -f1`
+do
+	SCORE_CPU=`expr ${SCORE_CPU} + ${i}`
+done
+XML="${XML}\n\t\t\t<score_cpu>${SCORE_CPU}</score_cpu>"
+XML="${XML}\n\t\t</cpu>"
+
+#
+# RAM
+#####################################################################
+XML="${XML}\n\t\t<ram>"
+INI=`grep "\*-bank" -n /tmp/lshw 2>/dev/null | cut -d':' -f1 | head -1`
+FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | egrep -v "memory|bank" | cut -d':' -f1 | head -1`
+SIZE_RAM=0
+# Se buscan los módulos de memoria y se calcula el total en MB
+for i in `tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep size | awk {'print $2'}`
+do
+	UNIDAD=`echo ${i} | sed "s/[0-9i]//g"`
+	SIZE=`echo ${i} | sed "s/[a-zA-Z]//g"`
+	if [ ${UNIDAD} = "MB" ]
+	then
+		SIZE_RAM=`expr ${SIZE} + ${SIZE_RAM} 2>/dev/null`
+	elif [ ${UNIDAD} = "GB" ]
+	then
+		SIZE_RAM=`expr 1024 \* ${SIZE} + ${SIZE_RAM} 2>/dev/null`
+	elif [ ${UNIDAD} = "TB" ]
+	then
+		SIZE_RAM=`expr 1048576 \* ${SIZE} + ${SIZE_RAM} 2>/dev/null`
+	fi
+done
+# Se deja la cantidad en la unidad más adecuada
+UNIDAD="MB"
+if [ ${SIZE_RAM} -gt 1024 ]
+then
+	SIZE_RAM=`echo "scale = 2; ${SIZE_RAM} / 1024" | bc 2>/dev/null`
+	UNIDAD="GB"
+fi
+if [ ${SIZE_RAM} -gt 1024 ]
+then
+	SIZE_RAM=`echo "scale = 2; ${SIZE_RAM} / 1024" | bc 2>/dev/null`
+	UNIDAD="TB"
+fi
+XML="${XML}\n\t\t\t<size_ram>${SIZE_RAM}</size_ram>"
+XML="${XML}\n\t\t\t<unit_size_ram>${UNIDAD}</unit_size_ram>"
+# Se busca el tipo de interfaz de la memoria
+INTERFACE_RAM=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | egrep -o "EDO|SDRAM|DDR3|DDR2|DDR|RDRAM" | head -1`
+if [ -z "${INTERFACE_RAM}" ]
+then
+	INTERFACE_RAM="Unknown"
+fi
+XML="${XML}\n\t\t\t<interface_ram>${INTERFACE_RAM}</interface_ram>"
+# Se busca el número de ranuras de memoria usadas
+USED_SLOT_RAM=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "description" | grep -v "empty" | wc -l`
+XML="${XML}\n\t\t\t<used_slot_ram>${USED_SLOT_RAM}</used_slot_ram>"
+# Se busca el número de ranuras de memoria libres
+FREE_SLOT_RAM=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "description" | grep "empty" | wc -l`
+XML="${XML}\n\t\t\t<free_slot_ram>${FREE_SLOT_RAM}</free_slot_ram>"
+# Se calcula la puntuación de la memoria dividiendo la frecuencia de la memoria
+# (cuanto mayor mejor) entre la latencia (cuanto menor mejor)
+FREQ_RAM=`dmidecode --type 17 | grep Speed | grep -vi unknown | tail -1 | awk {'print $2'}`
+LAT_RAM=`dmidecode --type 17 | grep Speed | grep -vi unknown | tail -1 | cut -d'(' -f2 | cut -d' ' -f1`
+SCORE_RAM=`echo ${FREQ_RAM} / ${LAT_RAM} | bc 2>/dev/null`
+if [ -z ${SCORE_RAM} ]
+then
+	SCORE_RAM="Unknown"
+fi
+XML="${XML}\n\t\t\t<score_ram>${SCORE_RAM}</score_ram>"
+XML="${XML}\n\t\t</ram>"
+
+#
+# HDD
+#####################################################################
+# En el caso de que estemos ejecutando donator desde un Live-USB, este se ve en el sistema
+# como la unidad de cdrom, por lo que se puede identificar y dejar fuera del reconocimiento
+# de discos. En caso de que se ejecute desde un sistema no Live, no hay problema ya que el cdrom
+# "normal" no coincidirá con ningún disco duro encontrado por la herramienta lshw.
+HDD_SISTEMA=`mount | grep cdrom | cut -d' ' -f1 | sed -e "s/[0-9]//g"`
+
+# Se buscan los discos duros
+for i in `grep -n "\*-disk" /tmp/lshw 2>/dev/null | cut -d':' -f1`
+do
+	# Se busca el inicio y fin de la sección del disco 
+	INI=${i}
+	FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+	# Comprobamos que no sea el disco desde el que se ejecuta el sistema
+	LOGICAL_NAME=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "logical name" | awk {'print $3'}`
+	if [ "${LOGICAL_NAME}" != "${HDD_SISTEMA}" ]
+	then
+		HDD_DETECTED=1
+		XML="${XML}\n\t\t<hdd>"
+		# Se busca la capacidad del disco
+		SIZE_HDD=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep size | awk {'print $2'} | sed "s/[a-zA-Z]//g"`
+		XML="${XML}\n\t\t\t<size_hdd>${SIZE_HDD}</size_hdd>"
+		# Se busca la unidad de capacidad del disco anterior
+		UNIT_SIZE_HDD=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep size | awk {'print $2'} | sed "s/[0-9i]//g"`
+		XML="${XML}\n\t\t\t<unit_size_hdd>${UNIT_SIZE_HDD}</unit_size_hdd>"
+		# Se busca el tipo de interfaz del disco
+		INI2=`grep -n "\*-" /tmp/lshw 2>/dev/null | grep -B 1 ${INI} | head -1 | cut -d':' -f1`
+		if [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i sata | wc -l` -gt 0 ]
+		then
+			INTERFACE_HDD="SATA"
+		elif [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i usb | wc -l` -gt 0 ]
+		then
+			INTERFACE_HDD="USB"
+		elif [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i ata | wc -l` -gt 0 ]
+		then
+			INTERFACE_HDD="ATA"
+		elif [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i scsi | wc -l` -gt 0 ]
+		then
+			INTERFACE_HDD="SCSI"
+		else
+			INTERFACE_HDD="Unknown"
+		fi
+		XML="${XML}\n\t\t\t<interface_hdd>${INTERFACE_HDD}</interface_hdd>"
+		XML="${XML}\n\t\t</hdd>"
+	fi
+done
+
+# Si la búsqueda de disco no ha funcionado se utiliza otro método de busqueda
+# realizando las mismas búsquedas que anteriormente (la interfaz del disco
+# será desconocida si se utiliza este método)
+if [ -z ${HDD_DETECTED} ]
+then
+	oldIFS=${IFS}
+	IFS=$'\n'
+	for i in `fdisk -l 2>/dev/null | grep dev | egrep "bytes|octets"`
+	do
+		# Se comprueba que el disco no sea desde el que se ejecuta el live-usb
+		LOGICAL_NAME=`echo ${i} | grep -o "\/dev\/[a-z]*"`
+		if [ "${LOGICAL_NAME}" != "${HDD_SISTEMA}" ]
+		then
+			XML="${XML}\n\t\t<hdd>"
+			SIZE_HDD=`echo ${i} | cut -d':' -f2 | cut -d',' -f1 | cut -d' ' -f2`
+			XML="${XML}\n\t\t\t<size_hdd>${SIZE_HDD}</size_hdd>"
+			UNIT_SIZE_HDD=`echo ${i} | cut -d':' -f2 | cut -d',' -f1 | cut -d' ' -f3`
+			XML="${XML}\n\t\t\t<unit_size_hdd>${UNIT_SIZE_HDD}</unit_size_hdd>"
+			XML="${XML}\n\t\t\t<interface_hdd>Unknown</interface_hdd>"
+			XML="${XML}\n\t\t</hdd>"
+		fi
+	done
+	IFS=${oldIFS}
+fi
+
+#
+# VGA
+#####################################################################
+# Se buscan las targetas gráficas
+for i in `grep -n "\*-display" /tmp/lshw 2>/dev/null | cut -d':' -f1`
+do
+	# Se busca el modelo y fabricante
+	INI=${i}
+	FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+	PRODUCT_VGA=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep product | cut -d':' -f 2 | sed "s/^ //g"`
+	VENDOR_VGA=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep vendor | cut -d':' -f 2 | sed "s/^ //g"`
+	# Si no se encuentran ninguno de los dos, se utiliza la descripción como nombre del modelo
+	if [ -z "${VENDOR_VGA}" ] && [ -z "${PRODUCT_VGA}" ]
+	then
+		MODEL_VGA=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep description | cut -d':' -f 2 | sed "s/^ //g"`
+	else
+		MODEL_VGA="${VENDOR_VGA} ${PRODUCT_VGA}"
+	fi
+	# Guardamos el nombre del modelo para compararlo con la siguiente targeta gráfica
+	# y solucionar el problema de las VGA repetidas
+	if [ "${MODEL_VGA}" == "${MODEL_VGA_OLD}" ]
+	then
+		# Si la targeta es igual que la anterior la desechamos ya que la herramienta
+		# lshw duplica algunas VGA
+		MODEL_VGA_OLD="Nuevo"
+	else
+		XML="${XML}\n\t\t<vga>"
+		MODEL_VGA_OLD=${MODEL_VGA}
+		XML="${XML}\n\t\t\t<model_vga>${MODEL_VGA}</model_vga>"
+		# Se busca la cantidad de memoria de la VGA
+		SIZE_VGA=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "size:" | awk {'print $2'} | sed "s/[a-zA-Z]//g"`
+		# Se busca la unidad de memoria de la VGA
+		UNIT_SIZE_VGA=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "size:" | awk {'print $2'} | sed "s/[0-9]//g"`
+		MAX=0
+		if [ -z ${SIZE_VGA} ]
+		then
+			for SIZE in `lspci -vvv -s \`lspci 2>/dev/null | grep -F "${PRODUCT_VGA}" | head -1 | awk {'print $1'}\` 2>/dev/null | egrep "prefetchable" | egrep -o "[0-9]{1,3}[KMGT]+"`
+			do
+				NUMERIC=`echo ${SIZE} | egrep -o "[0-9]*"`
+				if [ -n `echo ${SIZE} | grep "T"` ]
+				then
+					NSIZE=`expr ${NUMERIC} \* 1024 \* 1024 \* 1024 \* 1024`
+				elif [ -n `echo ${SIZE} | grep "G"` ]
+				then
+					NSIZE=`expr ${NUMERIC} \* 1024 \* 1024 \* 1024`
+				elif [ -n `echo ${SIZE} | grep "M"` ]
+				then
+					NSIZE=`expr ${NUMERIC} \* 1024 \* 1024`
+				elif [ -n `echo ${SIZE} | grep "K"` ]
+				then
+					NSIZE=`expr ${NUMERIC} \* 1024`
+				else
+					NSIZE=${NUMERIC}
+				fi
+				if [ ${NSIZE} -gt ${MAX} ]
+				then
+					MAX=${NSIZE}
+					MAXS=${SIZE}
+				fi
+			done
+			UNIT_SIZE_VGA="`echo ${MAXS} | egrep -o "K|M|G|T"`B"
+			SIZE_VGA=`echo ${MAXS} | sed -e s/[KMGT]//`
+		fi
+		XML="${XML}\n\t\t\t<size_vga>${SIZE_VGA}</size_vga>"
+		XML="${XML}\n\t\t\t<unit_size_vga>${UNIT_SIZE_VGA}</unit_size_vga>"
+		for i in `echo ${MODEL_VGA} | grep -oie "[a-z0-9]*[0-9][a-z0-9]*"`
+		do
+			grep -w ${i} ${ETC_DIR}/vga.txt
+		done > /tmp/vga
+		for i in `echo ${MODEL_VGA} | sed -e 's/\[//g' -e 's/\]//g'`
+		do
+			grep -iw ${i} /tmp/vga
+		done > /tmp/vga2
+		SCORE_VGA=`sort /tmp/vga2 | uniq -c | sort -rnk 1 | head -1 | cut -f2`
+		XML="${XML}\n\t\t\t<score_vga>${SCORE_VGA}</score_vga>"
+		XML="${XML}\n\t\t</vga>"
+	fi
+done
+
+#
+# AUDIO
+#####################################################################
+for i in `grep -n "\*-multimedia" /tmp/lshw 2>/dev/null | cut -d':' -f1`
+do
+	XML="${XML}\n\t\t<audio>"
+	INI=${i}
+	FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+	MODEL_AUDIO=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep product | cut -d':' -f 2 | sed "s/^ //g"`
+	XML="${XML}\n\t\t\t<model_audio>${MODEL_AUDIO}</model_audio>"
+	XML="${XML}\n\t\t</audio>"
+done
+
+#
+# NETWORK
+#####################################################################
+for i in `grep -n "\*-network" /tmp/lshw 2>/dev/null | cut -d':' -f1`
+do
+	XML="${XML}\n\t\t<net>"
+	INI=${i}
+	FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+	MODEL_NET=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep product | cut -d':' -f 2 | sed "s/^ //g"`
+	XML="${XML}\n\t\t\t<model_net>${MODEL_NET}</model_net>"
+	SPEED_NET=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep capacity | cut -d':' -f 2 | sed "s/^ //g"`
+	if [ -z ${SPEED_NET} ]
+	then
+		if [ ! -z `echo ${MODEL_NET} | egrep -i "54g|11a|11g"` ]
+		then
+			SPEED_NET="54Mbps"
+		elif [ ! -z `echo ${MODEL_NET} | grep -i "11b"` ]
+		then
+			SPEED_NET="11Mbps"
+		elif [ ! -z `echo ${MODEL_NET} | grep -i "11n"` ]
+		then
+			SPEED_NET="600Mbps"
+		elif [ ! -z `echo ${MODEL_NET} | grep -i "giga"` ]
+		then
+			SPEED_NET="1Gbps"
+		elif [ ! -z `echo ${MODEL_NET} | grep -i "ethernet"` ]
+		then
+			SPEED_NET="100Mbps"
+		else
+			SPEED_NET="Desconeguda"
+		fi
+	fi
+	XML="${XML}\n\t\t\t<speed_net>${SPEED_NET}</speed_net>"
+	XML="${XML}\n\t\t</net>"
+done
+
+#
+# UNIDADES
+#####################################################################
+for i in `grep -n "\*-cdrom" /tmp/lshw 2>/dev/null | cut -d':' -f1`
+do
+	INI=${i}
+	FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
+	MODEL_UNI=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep product | cut -d':' -f 2 | sed "s/^ //g"`
+	DESCRIPTION_UNI=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep description | cut -d':' -f 2 | sed "s/^ //g"`
+	if [ -z "${MODEL_UNI}" ]
+	then
+		MODEL_UNI=${DESCRIPTION_UNI}
+	fi
+	ESCD=`echo ${MODEL_UNI} | grep -i cd`
+	ESDVD=`echo ${MODEL_UNI} | grep -i dvd`
+	ESBD=`echo ${MODEL_UNI} | grep -i bd`
+	if ! [ -z "${ESDVD}" ]
+	then
+		ESRW=`echo ${DESCRIPTION_UNI} | grep -i writer`
+		if [ -z "${ESRW}" ]
+		then
+			TIPO_UNI="DVD"
+		else
+			TIPO_UNI="DVD-RW"
+		fi
+	elif ! [ -z "${ESCD}" ]
+	then
+		ESRW=`echo ${DESCRIPTION_UNI} | grep -i writer`
+		if [ -z "${ESRW}" ]
+		then
+			TIPO_UNI="CD"
+		else
+			TIPO_UNI="CD-RW"
+		fi
+	elif ! [ -z "${ESBD}" ]
+	then
+		ESRW=`echo ${DESCRIPTION_UNI} | grep -i writer`
+		if [ -z "${ESRW}" ]
+		then
+			TIPO_UNI="BR"
+		else
+			TIPO_UNI="BR-RW"
+		fi
+	fi
+	XML="${XML}\n\t\t<unidad>"
+	XML="${XML}\n\t\t\t<model_uni>${MODEL_UNI}</model_uni>"
+	XML="${XML}\n\t\t\t<tipo_uni>${TIPO_UNI}</tipo_uni>"
+	XML="${XML}\n\t\t</unidad>"
+done
+
+#
+# CONNECTOR
+#####################################################################
+XML="${XML}\n\t\t<connectors>"
+NOMBRE_CONNECTOR=`grep -n "\*-usb:" /tmp/lshw 2>/dev/null | wc -l`
+if [ ${NOMBRE_CONNECTOR} -gt 0 ]
+then
+	XML="${XML}\n\t\t\t<connector>"
+	XML="${XML}\n\t\t\t\t<tipus_connector>USB</tipus_connector>"
+	XML="${XML}\n\t\t\t\t<nombre_connector>${NOMBRE_CONNECTOR}</nombre_connector>"
+	XML="${XML}\n\t\t\t</connector>"
+fi
+
+NOMBRE_CONNECTOR=`grep -n "\*-firewire:" /tmp/lshw 2>/dev/null | wc -l`
+if [ ${NOMBRE_CONNECTOR} -gt 0 ]
+then
+	XML="${XML}\n\t\t\t<connector>"
+	XML="${XML}\n\t\t\t\t<tipus_connector>FireWire</tipus_connector>"
+	XML="${XML}\n\t\t\t\t<nombre_connector>${NOMBRE_CONNECTOR}</nombre_connector>"
+	XML="${XML}\n\t\t\t</connector>"
+fi
+
+NOMBRE_CONNECTOR=`grep -n "\*-serial:" /tmp/lshw 2>/dev/null | wc -l`
+if [ ${NOMBRE_CONNECTOR} -gt 0 ]
+then
+	XML="${XML}\n\t\t\t<connector>"
+	XML="${XML}\n\t\t\t\t<tipus_connector>Serial Port</tipus_connector>"
+	XML="${XML}\n\t\t\t\t<nombre_connector>${NOMBRE_CONNECTOR}</nombre_connector>"
+	XML="${XML}\n\t\t\t</connector>"
+fi
+
+NOMBRE_CONNECTOR=`grep -n "\*-pcmcia:" /tmp/lshw 2>/dev/null | wc -l`
+if [ ${NOMBRE_CONNECTOR} -gt 0 ]
+then
+	XML="${XML}\n\t\t\t<connector>"
+	XML="${XML}\n\t\t\t\t<tipus_connector>PCMCIA</tipus_connector>"
+	XML="${XML}\n\t\t\t\t<nombre_connector>${NOMBRE_CONNECTOR}</nombre_connector>"
+	XML="${XML}\n\t\t\t</connector>"
+fi
+XML="${XML}\n\t\t</connectors>"
+
+#
+# MARCA
+#####################################################################
+XML="${XML}\n\t\t<marca>"
+FIN=`grep -n "\*-" /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
+FAB_MARCA=`head -${FIN} /tmp/lshw 2>/dev/null | grep vendor | cut -d':' -f2 | sed "s/^ //g"`
+XML="${XML}\n\t\t\t<fab_marca>${FAB_MARCA}</fab_marca>"
+MODEL_MARCA=`head -${FIN} /tmp/lshw 2>/dev/null | grep product | cut -d ':' -f2 | sed "s/^ //g"`
+XML="${XML}\n\t\t\t<model_marca>${MODEL_MARCA}</model_marca>"
+XML="${XML}\n\t\t</marca>"
+
+XML="${XML}\n\t</caracteristiques>"
+
+
+
+
+echo -e ${XML} >> /tmp/XMLEEE.xml
+#
+# USER/PASS DE LA WEB
+####################################################################
+error=""
+OK=0
+
+while [ ${OK} != 1 ]
+do
+	tput clear
+	tput cup 3 17
+	tput setaf 3 
+	echo "${menu_5_title}"
+	tput setaf 1 
+	tput cup 18 5
+	echo "${error}"
+	tput sgr0
+	tput cup 7 5
+	echo "${menu_5_1}"
+	tput cup 8 5
+	echo "${menu_5_2}"
+	tput cup 10 5
+	read -p "${menu_5_3} " USER
+	stty -echo
+	tput cup 12 5 	#CEntra per ppantalla
+	read -p "${menu_5_4} " PASS; echo
+	tput cup 13 5
+	read -p "${menu_5_5} " RPASS; echo
+	tput sgr0
+	stty echo
+	if [ "${PASS}" != "${RPASS}" ] && [ "${PASS}" = "" ]
+	then
+		error=${passNoOK}
+	else
+		if [ "${USER}" != "" ]
+		then
+			OK=1
+		else
+			error=${userNoOK}
+		fi
+	fi
+done
+
+# Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
+END_DONATOR_TIME=`date +%s`
+XML="${XML}\n\t<END_DONATOR_TIME>${END_DONATOR_TIME}</END_DONATOR_TIME>"
+XML="${XML}\n</equip>"
+# Importamos la clave con la que encriptaremos los ficheros
+gpg --yes --import ${ETC_DIR}/key.bin 2>/dev/null
+
+# El fichero de login tendrá el mismo nombre que el fichero XML
+# pero con extension .login en vez de .xml
+FITXER_LOGIN=`echo ${FITXER} | sed -e 's/\.xml/\.login/g'`
+
+# Guardamos el usuario, password y fecha de recogida
+echo ${USER} >> ${FITXER_LOGIN}
+echo ${PASS} >> ${FITXER_LOGIN}
+echo ${DATA_LIMIT_DONANT} >> ${FITXER_LOGIN}
+echo -e ${XML} >> ${FITXER}.out     ##lINEA EXTRA, BORRAR AL TORNAR A FER ENCRIPTATGE
+
+# Encriptamos el fichero de login y borramos el no encriptado
+gpg --no-tty --yes --trust-model always --output ${FITXER_LOGIN}.out --encrypt --recipient ${EMAIL} ${FITXER_LOGIN} 2>/dev/null
+rm ${FITXER_LOGIN}
+
+# Encriptamos el fichero xml
+#echo -e ${XML} | gpg --no-tty --yes --trust-model always --output ${FITXER}.out --encrypt --recipient ${EMAIL} - 2>/dev/null
+
+# Borramos las claves que hemos importado
+gpg --batch --yes --delete-keys ${EMAIL} 2>/dev/null
+
+# En caso de que el programa se haya ejecutado con sudo
+# los permisos de los ficheros de gpg se han quedado con
+# root, por lo que los volvemos a dejar con su propietario
+# correcto
+if [ -n ${SUDO_USER} ]
+then
+	SUDO_GROUP=`groups ${SUDO_USER} | awk {'print $1'}`
+	chown -R ${SUDO_USER}:${SUDO_GROUP} ${HOME}/.gnupg
+fi
+
+#
+# SUBIR EL FICHERO XML ENCRIPTADO AL SFTP DESTINO
+##############################################################
+lftp -p ${PORT_SFTP} -u ${USER_SFTP},${PASS_SFTP} sftp://${HOST_SFTP} << EOF
+cd upload
+put ${FITXER_LOGIN}.out
+put ${FITXER}.out
+bye
+EOF
+
+mv ${FITXER}.out ${FITXER}
+rm ${FITXER_LOGIN}.out
+
+# Pantalla final del programa
+tput clear
+tput setaf 1
+echo ""
+echo ""
+echo ""
+echo "                    .___                     __                               "
+echo "                  __| _/____   ____ _____  _/  |_ ___________                 "
+echo "                 / __ |/  _ \\ /    \\\\__  \\ \\   __|  _ \\_  __ \\                "
+echo "                / /_/ (  <_> )   |  \\/ __ \\_|  |(  <_> )  | \\/                "
+echo "                \\____ |\\____/|___|  (____  /|__| \\____/|__|                   "
+echo "                     \\/           \\/     \\/                                   "
+echo ""
+echo "$final_1"
+echo "$final_2"
+echo "$final_3"
+echo "$final_4"
+echo ""
+echo ""
+echo ""
+tput sgr0
+
+exit 0
