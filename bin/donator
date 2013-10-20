@@ -21,9 +21,15 @@ else
 fi
 
 #Carga el fichero de configuración personal
-if [ -e ${HOME}/config.ini ]
+if [ -e config.ini ]
 then
-		. ${HOME}/config.ini
+		chmod +x ./config.ini
+		. config.ini
+else
+	if [ -e ${ETC_DIR}/config.ini ]
+		then
+		. ${ETC_DIR}/config.ini
+	fi
 fi
 
 # Compruebo que existe el fichero con la traducción de los menús
@@ -128,27 +134,27 @@ fi
 	tput sgr0
 	tput cup 7 5
 	echo "${menu_3_1}"
-	if [[ -z "$ASK_DONOR_ID" || "$ASK_DONOR_ID" == "Y" ]]
+	if [[ "$ASK_DONOR_ID" == *Y* ]]
 	then
 		tput cup 10 5
 		read -p "${menu_3_2} " ID_DONANT
 	fi
-	if [[ -z "$ASK_ID_2" || "$ASK_ID_2" == "Y" ]]
+	if [[ "$ASK_ID_2" == *Y* ]]
 	then
 		tput cup 13 5
 		read -p "${menu_3_3} " ID_2
 	fi
-	if [[ -z "$ASK_INIT_TIME" || "$ASK_INIT_TIME" == "Y" ]]
+	if [[ "$ASK_INIT_TIME" == *Y* ]]
 	then
 		tput cup 16 5 
 		read -p "${menu_3_4} " INITIAL_TIME
 	fi
-	if [[ -z "$ASK_LABEL" || "$ASK_LABEL" == "Y" ]]
+	if [[ "$ASK_LABEL" == *Y* ]]
 	then
 		tput cup 19 5
 		read -p "${menu_3_6} " LABEL
 	fi
-	if [[ -z "$ASK_OBS" || "$ASK_OBS" == "Y" ]]
+	if [[ "$ASK_OBS" == *Y* ]]
 	then
 		tput cup 22 5
 		read -p "${menu_3_5} " COMMENTS
@@ -674,12 +680,12 @@ XML="${XML}\n\t</caracteristiques>"
 
 
 
-if [[ -n "$INI_SAVE_XML" && "$INI_SAVE_XML" == "Y" ]]
+if [[ -n "$INI_SAVE_XML" && "$INI_SAVE_XML" == *Y* ]]
 	then
 	echo -e ${XML} >> ${HOME}/xml_unencrypted.xml
 fi
 
-if [[ -n "$OFFLINE" && "$OFFLINE" == "Y" ]]
+if [[ -n "$OFFLINE" && "$OFFLINE" == *Y* ]]
 then
 	echo "Offline mode."
 else
@@ -739,7 +745,7 @@ XML="${XML}\n</equip>"
 # Importamos la clave con la que encriptaremos los ficheros
 gpg --yes --import ${ETC_DIR}/key.bin 2>/dev/null
 
-if [[ -z "$OFFLINE" || "$OFFLINE" == "N" ]]
+if [[ -z "$OFFLINE" || "$OFFLINE" == *N* ]]
 then
 	# El fichero de login tendrá el mismo nombre que el fichero XML
 	# pero con extension .login en vez de .xml
@@ -772,7 +778,7 @@ then
 	chown -R ${SUDO_USER}:${SUDO_GROUP} ${HOME}/.gnupg
 fi
 
-if [[ -z "$OFFLINE" || "$OFFLINE" == "N" ]]
+if [[ -z "$OFFLINE" || "$OFFLINE" == *N* ]]
 then
 	#
 	# SUBIR EL FICHERO XML ENCRIPTADO AL SFTP DESTINO
@@ -816,7 +822,7 @@ tput sgr0
 # Carga de movexml
 if [[ -e ${BIN_DIR}/movexml.sh ]]
 then
-	if [[ -z "$INI_MOVE" || "$INI_MOVE" == "Y" ]]
+	if [[ -z "$INI_MOVE" || "$INI_MOVE" == *Y* ]]
 	then
 		echo "$final_4_m"
         . ${BIN_DIR}/movexml.sh

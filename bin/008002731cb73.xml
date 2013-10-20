@@ -1,0 +1,70 @@
+<equip>
+	<id>008002731cb73</id>
+	<id2>1000268693735</id2>
+	<ID_donant></ID_donant>
+	<ID_2></ID_2>
+	<LABEL>d</LABEL>
+	<INITIAL_TIME>0</INITIAL_TIME>
+	<INITIAL_DONATOR_TIME>1382270896</INITIAL_DONATOR_TIME>
+	<comments>d</comments>
+	<type>1</type>
+	<serials>
+		<serial_fab> 0</serial_fab>
+		<serial_mot>0</serial_mot>
+		<serial_cpu>0001-06A5-0000-0000-0000-0000</serial_cpu>
+		<serial_ram>08:00:27:31:cb:73</serial_ram>
+		<serial_hdd>VB149727ec-b8e3cf21</serial_hdd>
+	</serials>
+	<estat>
+		<dat_estat>2013-10-20</dat_estat>
+		<online>SI</online>
+	</estat>
+	<caracteristiques>
+		<cpu>
+			<nom_cpu>Intel(R) Core(TM) i7 CPU 920 @ 2.67GHz</nom_cpu>
+			<fab_cpu>GenuineIntel</fab_cpu>
+			<speed_cpu>2.67</speed_cpu>
+			<unit_speed_cpu>GHz</unit_speed_cpu>
+			<number_cpu>1</number_cpu>
+			<number_cores>8</number_cores>
+			<score_cpu>44280</score_cpu>
+		</cpu>
+		<ram>
+			<size_ram>0</size_ram>
+			<unit_size_ram>MB</unit_size_ram>
+			<interface_ram>Unknown</interface_ram>
+			<used_slot_ram>0</used_slot_ram>
+			<free_slot_ram>0</free_slot_ram>
+			<score_ram>Unknown</score_ram>
+		</ram>
+		<hdd>
+			<size_hdd>25 =5</size_hdd>
+			<unit_size_hdd>GB ansverson=</unit_size_hdd>
+			<interface_hdd>SATA</interface_hdd>
+		</hdd>
+		<vga>
+			<model_vga>InnoTek Systemberatung GmbH VirtualBox Graphics Adapter</model_vga>
+			<size_vga>64</size_vga>
+			<unit_size_vga>MB</unit_size_vga>
+			<score_vga></score_vga>
+		</vga>
+		<audio>
+			<model_audio>82801AA AC'97 Audio Controller</model_audio>
+		</audio>
+		<net>
+			<model_net>82540EM Gigabit Ethernet Controller</model_net>
+			<speed_net>1Gbit/s</speed_net>
+		</net>
+		<unidad>
+			<model_uni>DVD reader</model_uni>
+			<tipo_uni>DVD</tipo_uni>
+		</unidad>
+		<connectors>
+		</connectors>
+		<marca>
+			<fab_marca>innotek GmbH</fab_marca>
+			<model_marca>VirtualBox ()</model_marca>
+		</marca>
+	</caracteristiques>
+	<END_DONATOR_TIME>1382270907</END_DONATOR_TIME>
+</equip>
