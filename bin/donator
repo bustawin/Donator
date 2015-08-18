@@ -1,11 +1,14 @@
 #!/bin/bash
-
+clear
+lshw > /tmp/lshw
+# DMIDECODE
+DMIDECODE=/tmp/dmidecode
+dmidecode > $DMIDECODE
 #tiempo de inicio del registro en Donator
 INITIAL_DONATOR_TIME=`date +%s`
 
-# Compruebo el idioma por defecto del SO
-LANG=`locale | grep LANG | grep -v LANGUAGE | cut -d "=" -f 2 | cut -d "_" -f 1`
-
+# Compruebo el idioma por defecto del SO/usr/share/donator/bin/
+LANG=`echo $LANG | head -n 1 | cut -c1-2`
 # Declaración de directorios
 BIN_DIR="$( cd "$( dirname "$0" )" && pwd )"
 HOME_DONATOR=`echo ${BIN_DIR} | sed -e 's/\/bin//g'`
@@ -18,6 +21,113 @@ then
 else
         echo $configuracionNoOK 
         exit 1
+fi
+
+#Carga el fichero de configuración personal
+variables() {
+	if [[ `cat $variables_file | grep -o DISC=N` == "DISC=N" ]]
+	then
+		DISC=N
+	elif [[ `cat $variables_file | grep -o DISC=1` == "DISC=1" ]]
+	then
+		DISC=1
+	elif [[ `cat $variables_file | grep -o DISC=2` == "DISC=2" ]]
+	then
+		DISC=2
+	else
+		DISC=Y
+	fi
+	if [[ `cat $variables_file | grep -o ERASE=N` == "ERASE=N" ]]
+	then
+		ERASE=N
+	else
+		ERASE=Y
+	fi	
+	if [[ `cat $variables_file | grep -o EQUIP=1` == "EQUIP=1" ]]
+	then
+		EQUIP=1
+	elif [[ `cat $variables_file | grep -o EQUIP=2` == "EQUIP=2" ]]
+	then
+		EQUIP=2
+	elif [[ `cat $variables_file | grep -o EQUIP=3` == "EQUIP=3" ]]
+	then
+		EQUIP=3
+	elif [[ `cat $variables_file | grep -o EQUIP=4` == "EQUIP=4" ]]
+	then
+		EQUIP=4
+	elif [[ `cat $variables_file | grep -o EQUIP=5` == "EQUIP=5" ]]
+	then
+		EQUIP=5
+	elif [[ `cat $variables_file | grep -o EQUIP=6` == "EQUIP=6" ]]
+	then
+		EQUIP=6
+	else
+		EQUIP=0
+	fi
+	if [[ `cat $variables_file | grep -o DONOR=N` == "DONOR=N" ]]
+	then
+		DONOR=N
+	else
+		DONOR=Y
+	fi
+	if [[ `cat $variables_file | grep -o ID=N` == "ID=N" ]]
+	then
+		ID=N
+	else
+		ID=Y
+	fi
+	if [[ `cat $variables_file | grep -o TIME=Y` == "ID=Y" ]]
+	then
+		ID=Y
+	else
+		ID=N
+	fi
+	if [[ `cat $variables_file | grep -o LABEL=N` == "LABEL=N" ]]
+	then
+		LABEL=N
+	else
+		LABEL=Y
+	fi
+	if [[ `cat $variables_file | grep -o OBS=N` == "OBS=N" ]]
+	then
+		OBS=N
+	else
+		OBS=Y
+	fi
+	if [[ `cat $variables_file | grep -o SAVE=Y` == "SAVE=Y" ]]
+	then
+		SAVE=Y
+	else
+		SAVE=n
+	fi
+	if [[ `cat $variables_file | grep -o OFFLINE=N` == "OFFLINE=N" ]]
+	then
+		OFFLINE=N
+	else
+		OFFLINE=Y
+	fi
+	if [[ `cat $variables_file | grep -o MOVE=N` == "MOVE=N" ]]
+	then
+		MOVE=N
+	else
+		MOVE=Y
+	fi
+	if [[ `cat $variables_file | grep -o SENDTOSERVER=N` == "SENDTOSERVER=N" ]]
+	then
+		SENDTOSERVER=N
+	else
+		SENDTOSERVER=Y
+	fi
+}
+. /usr/share/donator/bin/disclist.sh
+DIRCONINI=`mount | grep $USB_ALM | awk '{print $3}'`
+if [ -e $DIRCONINI/config.ini ]
+then
+		variables_file="$DIRCONINI/config.ini"
+		variables
+else
+	variables_file="/usr/share/donator/etc/config.ini"
+	variables
 fi
 
 # Compruebo que existe el fichero con la traducción de los menús
@@ -68,14 +178,13 @@ echo ""
 echo "$splash_1"
 tput sgr0
 tput cup 13 1
-echo "$splash_2"
-sleep 1; tput cup 13 49; echo "2"
-sleep 1; tput cup 13 49; echo "1"
-sleep 1
+#echo "$splash_2"
+#sleep 1; tput cup 13 49; echo "2"
+#sleep 1; tput cup 13 49; echo "1"
+#sleep 1
 
 # Ejecutamos la herramienta lshw y dejamos el resultado en un fichero
 # en el directorio temporal. Comprobamos que se ha generado.
-lshw > /tmp/lshw
 if [ ! -f /tmp/lshw ]
 then
 	echo ${nofile}
@@ -84,26 +193,32 @@ fi
 #
 # TIPUS D'EQUIP
 ####################################################################
-EQUIP_TYPE="0"
-choice="0"
-	tput clear
-	tput cup 3 17
-	tput setaf 3 
-	echo "${menu_2_title}"
-	tput setaf 1 
-	tput cup 18 5
-	tput sgr0
-	tput cup 7 5
-	echo "${menu_2_1}"
-	tput cup 10 5
-	echo "${menu_2_2}"
-	tput cup 16 5
-	read -p "${menu_2_3} " choice
+if [[ $EQUIP == 0 ]]
+then
+	EQUIP_TYPE="0"
+	choice="0"
+		tput clear
+		tput cup 3 17
+		tput setaf 3 
+		echo "${menu_2_title}"
+		tput setaf 1 
+		tput cup 18 5
+		tput sgr0
+		tput cup 7 5
+		echo "${menu_2_1}"
+		tput cup 10 5
+		echo "${menu_2_2}"
+		tput cup 16 5
+		read -p "${menu_2_3} " choice
 
-	if [ "${choice}" = "1" ] || [ "${choice}" = "2" ] || [ "${choice}" = "3" ] || [ "${choice}" = "4" ]
-	then
-		EQUIP_TYPE=$choice
-	fi
+		if [ "${choice}" = "1" ] || [ "${choice}" = "2" ] || [ "${choice}" = "3" ] || [ "${choice}" = "4" ] || [ "${choice}" = "5" ] || [ "${choice}" = "6" ]
+		then
+			EQUIP_TYPE=$choice
+		fi
+else
+	EQUIP_TYPE="$EQUIP";
+fi
+
 #
 # INFORMACIO ADDICIONAL EQUIP
 ####################################################################
@@ -116,16 +231,38 @@ choice="0"
 	tput sgr0
 	tput cup 7 5
 	echo "${menu_3_1}"
-	tput cup 10 5
-	read -p "${menu_3_2} " ID_DONANT
-	tput cup 13 5
-	read -p "${menu_3_3} " ID_2
-	tput cup 16 5 
-	read -p "${menu_3_4} " INITIAL_TIME
-	tput cup 19 5
-	read -p "${menu_3_5} " COMMENTS
+	if [[ "$DONOR" == *Y* ]]
+	then
+		tput cup 10 5
+		read -p "${menu_3_2} " ID_DONANT
+	fi
+	if [[ "$ID" == *Y* ]]
+	then
+		tput cup 13 5
+		read -p "${menu_3_3} " ID_2
+	fi
+	if [[ "$TIME" == *Y* ]]
+	then
+		tput cup 16 5 
+		read -p "${menu_3_4} " INITIAL_TIME
+	fi
+	if [[ "$LABEL" == *Y* ]]
+	then
+		tput cup 19 5
+		read -p "${menu_3_6} " LABEL
+	fi
+	if [[ "$OBS" == *Y* ]]
+	then
+		tput cup 22 5
+		read -p "${menu_3_5} " COMMENTS
+	fi
 
-INITIAL_TIME=`date +%s -d $INITIAL_TIME`
+if [[ -n "$INITIAL_TIME" ]]
+then
+	INITIAL_TIME=`date +%s -d $INITIAL_TIME`
+else
+	INITIAL_TIME="0"
+fi
 if [[ "$INITIAL_TIME" == *invalid* ]]
 then
 	INITIAL_TIME="0"
@@ -136,13 +273,10 @@ fi
 ID=`grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' /tmp/lshw 2>/dev/null | sed s/://g | head -1`
 
 # Buscamos el número de serie del fabricante
-FIN=`grep "\*-" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
-SERIAL1=`head -n +${FIN} /tmp/lshw 2>/dev/null | grep serial | cut -d':' -f2`
+SERIAL1=`cat $DMIDECODE | grep -A8 '^System Information' | grep  "Serial Number" | head -1 | cut -c 17-` # Nova comanda
 
 # Buscamos el número de serie de la placa base
-INI=`grep "\*-core" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
-FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
-SERIAL2=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | awk {'print $2'}`
+SERIAL2=`cat $DMIDECODE | grep -A4 '^Base Board Information' | grep "Serial Number" | cut -c 17-` # Nova comanda
 
 # Buscamos el número de serie de la CPU, si existen varios seleccionamos el primero
 INI=`grep "\*-cpu" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
@@ -150,9 +284,15 @@ FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 |
 SERIAL3=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | awk {'print $2'}`
 
 # Buscamos el número de serie de la RAM, si existen varios seleccionamos el primero
-INI=`grep "\*-memory" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
-FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | grep -v "bank" | tail -1 | cut -d':' -f1`
-SERIAL4=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | head -1 | awk {'print $2'}`
+for i in `dmidecode --type memory | grep Serial | awk '{print $3}'`
+do 
+	if [[ "$i" != "Empty" ]];
+	then
+		SERIAL4=$i
+		break
+	fi
+done
+#SERIAL4=`dmidecode --type memory | grep Serial | head -1 | awk '{print $3}'`
 
 # Buscamos el número de serie del disco duro, si existen varios seleccionamos el primero
 INI=`grep "\*-disk" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
@@ -189,10 +329,11 @@ XML="${XML}\n\t<id>0${ID}</id>"
 XML="${XML}\n\t<id2>1${ID2}</id2>"
 XML="${XML}\n\t<ID_donant>${ID_DONANT}</ID_donant>"
 XML="${XML}\n\t<ID_2>${ID_2}</ID_2>"
+XML="${XML}\n\t<LABEL>${LABEL}</LABEL>"
 XML="${XML}\n\t<INITIAL_TIME>${INITIAL_TIME}</INITIAL_TIME>"
 XML="${XML}\n\t<INITIAL_DONATOR_TIME>${INITIAL_DONATOR_TIME}</INITIAL_DONATOR_TIME>"
 XML="${XML}\n\t<comments>${COMMENTS}</comments>"
-XML="${XML}\n\t<type>${EQUIP_TYPE}</type>"
+XML="${XML}\n\t<type>$EQUIP_TYPE</type>"
 #
 # SERIALS
 #####################################################################
@@ -212,6 +353,7 @@ XML="${XML}\n\t</serials>"
 XML="${XML}\n\t<estat>"
 DAT_ESTAT=`date +%Y-%m-%d`
 XML="${XML}\n\t\t<dat_estat>${DAT_ESTAT}</dat_estat>"
+XML="${XML}\n\t\t<version>1.0</version>"
 ping www.google.es -c 1 >/dev/null 2>&1
 if [ $? -ne 0 ]
 then
@@ -219,6 +361,49 @@ then
 else
 	XML="${XML}\n\t\t<online>SI</online>"
 fi
+
+
+# SMARTEST #
+while [[ `date | awk '{print $4}'` < ` cat /usr/share/donator/etc/data.ini | grep "after" | awk '{print $8}'| grep :` ]]
+do
+	clear
+	tput cup 5 5
+	echo "Wait until checking HDD"
+	tput cup 6 5
+	echo "Now time: `date | awk '{print $4}'`"
+	tput cup 7 5
+	echo "End time: `cat /usr/share/donator/etc/data.ini | grep "after" | awk '{print $8}'| grep :`"
+	sleep 1
+done
+if [[ `cat /usr/share/donator/etc/data.ini | grep -o "Test will"` == "Test will" ]]; then
+SMARTEST_CHECK="Yes"
+. /usr/share/donator/bin/disclist.sh
+DEVICE_CHECK=$DISC_DUR
+TYPE_CHECK_HDD=`smartctl -a /dev/sda | grep "# 1" | awk '{print $3}'`
+CHECK_HDD=`sudo smartctl -a /dev/sda | grep "# 1" | awk '{print $5, $6, $7}'`
+LIFETIME_HDD=`smartctl -a /dev/sda | grep "# 1" | awk '{print $9}'`
+FIRST_ERROR_HDD=`smartctl -a /dev/sda | grep "# 1" | awk '{print $10}'`
+else
+SMARTEST_CHECK="No"
+DEVICE_CHECK="null"
+TYPE_CHECK_HDD="null"
+CHECK_HDD="null"
+LIFETIME_HDD="null"
+FIRST_ERROR_HDD="-"
+fi
+
+
+XML="${XML}\n\t\t<smartest>"
+XML="${XML}\n\t\t\t<check>$SMARTEST_CHECK</check>"
+XML="${XML}\n\t\t\t<device_check>$DEVICE_CHECK</device_check>"
+XML="${XML}\n\t\t\t<type_check>$TYPE_CHECK_HDD</type_check>"
+XML="${XML}\n\t\t\t<info_check>$CHECK_HDD</info_check>"
+XML="${XML}\n\t\t\t<lifetime_check>$LIFETIME_HDD</lifetime_check>"
+XML="${XML}\n\t\t\t<first_error_check>$FIRST_ERROR_HDD</first_error_check>"
+XML="${XML}\n\t\t</smartest>"
+
+	# FI SMARTEST #
+	
 XML="${XML}\n\t</estat>"
 
 #
@@ -276,36 +461,21 @@ XML="${XML}\n\t\t<ram>"
 INI=`grep "\*-bank" -n /tmp/lshw 2>/dev/null | cut -d':' -f1 | head -1`
 FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | egrep -v "memory|bank" | cut -d':' -f1 | head -1`
 SIZE_RAM=0
-# Se buscan los módulos de memoria y se calcula el total en MB
-for i in `tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep size | awk {'print $2'}`
+# Busca el Physical handle de cada memoria ram per indentificar-los i suma la cuantitat
+#!/bin/bash
+DMIDECODE=/tmp/dmidecode
+SIZE_RAM1=0
+for i in `dmidecode -t 17 | grep Size | grep MB | awk '{print $2}'`
 do
-	UNIDAD=`echo ${i} | sed "s/[0-9i]//g"`
-	SIZE=`echo ${i} | sed "s/[a-zA-Z]//g"`
-	if [ ${UNIDAD} = "MB" ]
-	then
-		SIZE_RAM=`expr ${SIZE} + ${SIZE_RAM} 2>/dev/null`
-	elif [ ${UNIDAD} = "GB" ]
-	then
-		SIZE_RAM=`expr 1024 \* ${SIZE} + ${SIZE_RAM} 2>/dev/null`
-	elif [ ${UNIDAD} = "TB" ]
-	then
-		SIZE_RAM=`expr 1048576 \* ${SIZE} + ${SIZE_RAM} 2>/dev/null`
-	fi
+        SIZE_RAM1=$i
+        if [[ -z SIZE_RAM ]]; then
+                SIZE_RAM=$SIZE_RAM
+        else
+        SIZE_RAM=$((SIZE_RAM+SIZE_RAM1))
+        fi
 done
-# Se deja la cantidad en la unidad más adecuada
-UNIDAD="MB"
-if [ ${SIZE_RAM} -gt 1024 ]
-then
-	SIZE_RAM=`echo "scale = 2; ${SIZE_RAM} / 1024" | bc 2>/dev/null`
-	UNIDAD="GB"
-fi
-if [ ${SIZE_RAM} -gt 1024 ]
-then
-	SIZE_RAM=`echo "scale = 2; ${SIZE_RAM} / 1024" | bc 2>/dev/null`
-	UNIDAD="TB"
-fi
 XML="${XML}\n\t\t\t<size_ram>${SIZE_RAM}</size_ram>"
-XML="${XML}\n\t\t\t<unit_size_ram>${UNIDAD}</unit_size_ram>"
+XML="${XML}\n\t\t\t<unit_size_ram>MB</unit_size_ram>"
 # Se busca el tipo de interfaz de la memoria
 INTERFACE_RAM=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | egrep -o "EDO|SDRAM|DDR3|DDR2|DDR|RDRAM" | head -1`
 if [ -z "${INTERFACE_RAM}" ]
@@ -314,14 +484,15 @@ then
 fi
 XML="${XML}\n\t\t\t<interface_ram>${INTERFACE_RAM}</interface_ram>"
 # Se busca el número de ranuras de memoria usadas
-USED_SLOT_RAM=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "description" | grep -v "empty" | wc -l`
+USED_SLOT_RAM=`dmidecode -t 17 | grep Size | grep MB | awk '{print $2}' | wc -l`
 XML="${XML}\n\t\t\t<used_slot_ram>${USED_SLOT_RAM}</used_slot_ram>"
 # Se busca el número de ranuras de memoria libres
-FREE_SLOT_RAM=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "description" | grep "empty" | wc -l`
+SLOTS_RAM=`dmidecode -t 17 | grep -o BANK | wc -l`
+FREE_SLOT_RAM=$((SLOTS_RAM-USED_SLOT_RAM))
 XML="${XML}\n\t\t\t<free_slot_ram>${FREE_SLOT_RAM}</free_slot_ram>"
 # Se calcula la puntuación de la memoria dividiendo la frecuencia de la memoria
 # (cuanto mayor mejor) entre la latencia (cuanto menor mejor)
-FREQ_RAM=`dmidecode --type 17 | grep Speed | grep -vi unknown | tail -1 | awk {'print $2'}`
+FREQ_RAM=`dmidecode --type 17 | grep Speed | grep -vi unknown | tail -1 | awk {'print $4'}`
 LAT_RAM=`dmidecode --type 17 | grep Speed | grep -vi unknown | tail -1 | cut -d'(' -f2 | cut -d' ' -f1`
 SCORE_RAM=`echo ${FREQ_RAM} / ${LAT_RAM} | bc 2>/dev/null`
 if [ -z ${SCORE_RAM} ]
@@ -347,38 +518,55 @@ do
 	INI=${i}
 	FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | head -2 | tail -1 | cut -d':' -f1`
 	# Comprobamos que no sea el disco desde el que se ejecuta el sistema
-	LOGICAL_NAME=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep "logical name" | awk {'print $3'}`
+	LOGICAL_NAME=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n10 | grep "logical name" | awk {'print $3'}`
+	# S'estableix la ruta del certificat
+	device_name=`echo $LOGICAL_NAME | cut -c6-8`
+	cert=/usr/share/donator/etc/$device_name.cert
+	#
+	HDD_DETECTED=1
 	if [ "${LOGICAL_NAME}" != "${HDD_SISTEMA}" ]
 	then
-		HDD_DETECTED=1
 		XML="${XML}\n\t\t<hdd>"
-		# Se busca la capacidad del disco
-		SIZE_HDD=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep size | awk {'print $2'} | sed "s/[a-zA-Z]//g"`
-		XML="${XML}\n\t\t\t<size_hdd>${SIZE_HDD}</size_hdd>"
-		# Se busca la unidad de capacidad del disco anterior
-		UNIT_SIZE_HDD=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep size | awk {'print $2'} | sed "s/[0-9i]//g"`
-		XML="${XML}\n\t\t\t<unit_size_hdd>${UNIT_SIZE_HDD}</unit_size_hdd>"
-		# Se busca el tipo de interfaz del disco
-		INI2=`grep -n "\*-" /tmp/lshw 2>/dev/null | grep -B 1 ${INI} | head -1 | cut -d':' -f1`
-		if [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i sata | wc -l` -gt 0 ]
-		then
-			INTERFACE_HDD="SATA"
-		elif [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i usb | wc -l` -gt 0 ]
-		then
-			INTERFACE_HDD="USB"
-		elif [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i ata | wc -l` -gt 0 ]
-		then
-			INTERFACE_HDD="ATA"
-		elif [ `tail -n +${INI2} /tmp/lshw 2>/dev/null | head -n ${FIN} | grep -i scsi | wc -l` -gt 0 ]
-		then
-			INTERFACE_HDD="SCSI"
+		# IF para identificar si es un USB o no
+		if [[ `udevadm info --query=all --name=$LOGICAL_NAME | grep ID_BUS | cut -c 11-` == usb ]]; then
+			Device_Name=`echo $LOGICAL_NAME | awk '{print $1}'`
+			# MODEL
+			XML="${XML}\n\t\t\t<model>"`smartctl --all -d scsi $Device_Name | grep "Vendor" | awk '{print $2}'`" "`smartctl --all -d scsi /dev/sdb | grep "Product" | cut -c 23-`"</model>"
+			# SERIAL
+			XML="${XML}\n\t\t\t<serial>"`lsblk --nodeps -o name,serial | grep $device_name | awk '{print $2}'`"</serial>"
+			# Se busca la capacidad del disco
+			XML="${XML}\n\t\t\t<size>"`smartctl --all -d scsi $Device_Name | grep "User Capacity" | awk '{print $3}' | sed 's/[.,]//g'`"</size>"
+			# Se busca la unidad de capacidad del disco anterior
+			XML="${XML}\n\t\t\t<measure>"`smartctl --all -d scsi $Device_Name | grep "User Capacity" | awk '{print $4'} | cut -c 1`"</measure>"
+			# NAME SD?
+			XML="${XML}\n\t\t\t<name>$Device_Name</name>"
 		else
-			INTERFACE_HDD="Unknown"
+			# MODEL
+			XML="${XML}\n\t\t\t<model>"`hdparm -I $LOGICAL_NAME | grep 'Model\ Number' | cut -c 22-`"</model>"
+			# SERIAL
+			XML="${XML}\n\t\t\t<serial>"`hdparm -I $LOGICAL_NAME | grep 'Serial\ Number' | cut -c 22-`"</serial>"
+			# SIZE
+			XML="${XML}\n\t\t\t<size>"`hdparm -I $LOGICAL_NAME | grep 'device\ size\ with\ M' | head -n1 | awk '{print $7}'`"</size>"
+			# MEASURE
+			XML="${XML}\n\t\t\t<measure>MB</measure>"
+			# NAME SD?
+			XML="${XML}\n\t\t\t<name>$LOGICAL_NAME</name>"
 		fi
-		XML="${XML}\n\t\t\t<interface_hdd>${INTERFACE_HDD}</interface_hdd>"
+		# INTERFACE
+		XML="${XML}\n\t\t\t<interface>"`udevadm info --query=all --name=$LOGICAL_NAME | grep ID_BUS | cut -c 11-`"</interface>"
+		# IMPORT Erasetor certificate #
+		if [ -f $cert ];
+		then
+			gpg --batch --no-tty --decrypt $cert >/dev/null 2>/tmp/vace
+			if [[ `cat /tmp/vace | grep -o 14D70D94` == "14D70D94" ]]; then
+				XML="${XML}`gpg --decrypt $cert 2>/dev/null`"
+				rm /tmp/vace
+			fi
+		fi
 		XML="${XML}\n\t\t</hdd>"
 	fi
 done
+
 
 # Si la búsqueda de disco no ha funcionado se utiliza otro método de busqueda
 # realizando las mismas búsquedas que anteriormente (la interfaz del disco
@@ -399,6 +587,7 @@ then
 			UNIT_SIZE_HDD=`echo ${i} | cut -d':' -f2 | cut -d',' -f1 | cut -d' ' -f3`
 			XML="${XML}\n\t\t\t<unit_size_hdd>${UNIT_SIZE_HDD}</unit_size_hdd>"
 			XML="${XML}\n\t\t\t<interface_hdd>Unknown</interface_hdd>"
+			XML="${XML}\n\t\t\t<check_hdd>Unknown interface</check_hdd>"
 			XML="${XML}\n\t\t</hdd>"
 		fi
 	done
@@ -639,76 +828,97 @@ XML="${XML}\n\t</caracteristiques>"
 
 
 
-
-echo -e ${XML} >> /tmp/XMLEEE.xml
-#
-# USER/PASS DE LA WEB
-####################################################################
-error=""
-OK=0
-
-while [ ${OK} != 1 ]
-do
-	tput clear
-	tput cup 3 17
-	tput setaf 3 
-	echo "${menu_5_title}"
-	tput setaf 1 
-	tput cup 18 5
-	echo "${error}"
-	tput sgr0
-	tput cup 7 5
-	echo "${menu_5_1}"
-	tput cup 8 5
-	echo "${menu_5_2}"
-	tput cup 10 5
-	read -p "${menu_5_3} " USER
-	stty -echo
-	tput cup 12 5 	#CEntra per ppantalla
-	read -p "${menu_5_4} " PASS; echo
-	tput cup 13 5
-	read -p "${menu_5_5} " RPASS; echo
-	tput sgr0
-	stty echo
-	if [ "${PASS}" != "${RPASS}" ] && [ "${PASS}" = "" ]
+if [[ -n "$SAVE" && "$SAVE" == *Y* ]]
 	then
-		error=${passNoOK}
+	echo -e ${XML} >> ${HOME}/unsigned_${FITXER}
+fi
+
+if [[ -n "$OFFLINE" && "$OFFLINE" == *Y* ]]
+then
+	echo "Offline mode."
+else
+	if [[ -n "$USERNAME" && -n "$PASSWORD" ]]
+	then
+		USER="$USERNAME"
+		PASS="$PASSWORD"
 	else
-		if [ "${USER}" != "" ]
-		then
-			OK=1
-		else
-			error=${userNoOK}
-		fi
+		#
+		# USER/PASS DE LA WEB
+		####################################################################
+		error=""
+		OK=0
+
+		while [ ${OK} != 1 ]
+		do
+			tput clear
+			tput cup 3 17
+			tput setaf 3 
+			echo "${menu_5_title}"
+			tput setaf 1 
+			tput cup 18 5
+			echo "${error}"
+			tput sgr0
+			tput cup 7 5
+			echo "${menu_5_1}"
+			tput cup 8 5
+			echo "${menu_5_2}"
+			tput cup 10 5
+			read -p "${menu_5_3} " USER
+			stty -echo
+			tput cup 12 5 	#CEntra per ppantalla
+			read -p "${menu_5_4} " PASS; echo
+			tput cup 13 5
+			read -p "${menu_5_5} " RPASS; echo
+			tput sgr0
+			stty echo
+			if [ "${PASS}" != "${RPASS}" ] && [ "${PASS}" = "" ]
+			then
+				error=${passNoOK}
+			else
+				if [ "${USER}" != "" ]
+				then
+					OK=1
+				else
+					error=${userNoOK}
+				fi
+			fi
+		done
 	fi
-done
+fi
 
 # Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
 END_DONATOR_TIME=`date +%s`
 XML="${XML}\n\t<END_DONATOR_TIME>${END_DONATOR_TIME}</END_DONATOR_TIME>"
 XML="${XML}\n</equip>"
 # Importamos la clave con la que encriptaremos los ficheros
-gpg --yes --import ${ETC_DIR}/key.bin 2>/dev/null
+gpg --batch --no-tty --yes --import ${ETC_DIR}/key.bin 2>/dev/null
 
-# El fichero de login tendrá el mismo nombre que el fichero XML
-# pero con extension .login en vez de .xml
-FITXER_LOGIN=`echo ${FITXER} | sed -e 's/\.xml/\.login/g'`
+if [[ -z "$OFFLINE" || "$OFFLINE" == *N* ]]
+then
+	# El fichero de login tendrá el mismo nombre que el fichero XML
+	# pero con extension .login en vez de .xml
+	FITXER_LOGIN=`echo ${FITXER} | sed -e 's/\.xml/\.login/g'`
 
-# Guardamos el usuario, password y fecha de recogida
-echo ${USER} >> ${FITXER_LOGIN}
-echo ${PASS} >> ${FITXER_LOGIN}
-echo ${DATA_LIMIT_DONANT} >> ${FITXER_LOGIN}
-echo -e ${XML} >> ${FITXER}.out     ##lINEA EXTRA, BORRAR AL TORNAR A FER ENCRIPTATGE
+	# Guardamos el usuario, password y fecha de recogida
+	echo ${USER} >> ${FITXER_LOGIN}
+	echo ${PASS} >> ${FITXER_LOGIN}
+	echo ${DATA_LIMIT_DONANT} >> ${FITXER_LOGIN}
 
-# Encriptamos el fichero de login y borramos el no encriptado
-gpg --no-tty --yes --trust-model always --output ${FITXER_LOGIN}.out --encrypt --recipient ${EMAIL} ${FITXER_LOGIN} 2>/dev/null
-rm ${FITXER_LOGIN}
 
+	# Encriptamos el fichero de login y borramos el no encriptado
+	passWORD=
+	gpg --no-tty --yes --trust-model always --passphrase $passWORD --output ${FITXER_LOGIN}.out --encrypt ${FITXER_LOGIN} 2>/dev/null
+	rm ${FITXER_LOGIN}
+	passWORD=0
+fi
+passWORD=
+echo -e ${XML} | gpg --batch --no-tty --output ${FITXER}.out --passphrase $passWORD --sign --armor 2>/dev/null  ##lINEA EXTRA, BORRAR AL TORNAR A FER ENCRIPTATGE
+passWORD=0
 # Encriptamos el fichero xml
 #echo -e ${XML} | gpg --no-tty --yes --trust-model always --output ${FITXER}.out --encrypt --recipient ${EMAIL} - 2>/dev/null
 
 # Borramos las claves que hemos importado
-gpg --batch --yes --delete-keys ${EMAIL} 2>/dev/null
+#gpg --batch --yes --delete-keys 10965135 2>/dev/null
 
 # En caso de que el programa se haya ejecutado con sudo
 # los permisos de los ficheros de gpg se han quedado con
@@ -720,9 +930,11 @@ then
 	chown -R ${SUDO_USER}:${SUDO_GROUP} ${HOME}/.gnupg
 fi
 
-#
-# SUBIR EL FICHERO XML ENCRIPTADO AL SFTP DESTINO
-##############################################################
+if [[ -z "$OFFLINE" || "$OFFLINE" == *N* ]]
+then
+	#
+	# SUBIR EL FICHERO XML ENCRIPTADO AL SFTP DESTINO
+	##############################################################
 lftp -p ${PORT_SFTP} -u ${USER_SFTP},${PASS_SFTP} sftp://${HOST_SFTP} << EOF
 cd upload
 put ${FITXER_LOGIN}.out
@@ -730,9 +942,27 @@ put ${FITXER}.out
 bye
 EOF
 
-mv ${FITXER}.out ${FITXER}
+	
 rm ${FITXER_LOGIN}.out
+fi
+mv ${FITXER}.out ${FITXER}
 
+# Enviar el fiche	ro al servidor VirtualBox:
+if [[ "$SENDTOSERVER" == *Y* ]]; then
+	clear
+	tput cup 11 5
+	echo "Looking for a server..."
+	ping -c 1 192.168.2.2 >/dev/null 2>&1
+    if [ $? -ne 0 ] ; then
+		tput cup 12 5
+        echo "Server not found"
+    else
+		tput cup 12 5
+		echo "Server found"
+		sshpass -p 5347849 scp ${FITXER} tecnico@192.168.2.2:/home/tecnico/XMLs/${FITXER} > /dev/null
+    fi
+	sleep 1
+fi
 # Pantalla final del programa
 tput clear
 tput setaf 1
@@ -746,13 +976,25 @@ echo "                / /_/ (  <_> )   |  \\/ __ \\_|  |(  <_> )  | \\/         
 echo "                \\____ |\\____/|___|  (____  /|__| \\____/|__|                   "
 echo "                     \\/           \\/     \\/                                   "
 echo ""
-echo "$final_1"
-echo "$final_2"
-echo "$final_3"
+if [[ -n "$OFFLINE" && "$OFFLINE" == *Y* ]]
+then
+	echo "$final2_1"
+else
+	echo "$final_1"
+	echo "$final_2"
+	echo "$final_3"
+fi
 echo "$final_4"
-echo ""
-echo ""
-echo ""
 tput sgr0
-
+# Carga de movexml
+if [[ -e ${BIN_DIR}/movexml.sh ]]
+then
+	if [[ -z "$MOVE" || "$MOVE" == *Y* ]]
+	then
+		echo "$final_4_m"
+        . ${BIN_DIR}/movexml.sh
+    else
+        exit
+    fi
+fi
 exit 0
