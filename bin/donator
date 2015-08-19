@@ -7,6 +7,9 @@ dmidecode > $DMIDECODE
 #tiempo de inicio del registro en Donator
 INITIAL_DONATOR_TIME=`date +%s`
 
+# Contraseña GPG
+GPGpassphrase=(password_here)
+
 # Compruebo el idioma por defecto del SO/usr/share/donator/bin/
 LANG=`echo $LANG | head -n 1 | cut -c1-2`
 # Declaración de directorios
@@ -865,7 +868,7 @@ else
 			tput cup 10 5
 			read -p "${menu_5_3} " USER
 			stty -echo
-			tput cup 12 5 	#CEntra per ppantalla
+			tput cup 12 5 	# Centra per pantalla
 			read -p "${menu_5_4} " PASS; echo
 			tput cup 13 5
 			read -p "${menu_5_5} " RPASS; echo
@@ -906,14 +909,10 @@ then
 
 
 	# Encriptamos el fichero de login y borramos el no encriptado
-	passWORD=
-	gpg --no-tty --yes --trust-model always --passphrase $passWORD --output ${FITXER_LOGIN}.out --encrypt ${FITXER_LOGIN} 2>/dev/null
+	gpg --no-tty --yes --trust-model always --passphrase $GPGpassphrase --output ${FITXER_LOGIN}.out --encrypt ${FITXER_LOGIN} 2>/dev/null
 	rm ${FITXER_LOGIN}
-	passWORD=0
 fi
-passWORD=
-echo -e ${XML} | gpg --batch --no-tty --output ${FITXER}.out --passphrase $passWORD --sign --armor 2>/dev/null  ##lINEA EXTRA, BORRAR AL TORNAR A FER ENCRIPTATGE
-passWORD=0
+echo -e ${XML} | gpg --batch --no-tty --output ${FITXER}.out --passphrase $GPGpassphrase --sign --armor 2>/dev/null  ##lINEA EXTRA, BORRAR AL TORNAR A FER ENCRIPTATGE
 # Encriptamos el fichero xml
 #echo -e ${XML} | gpg --no-tty --yes --trust-model always --output ${FITXER}.out --encrypt --recipient ${EMAIL} - 2>/dev/null
 
