@@ -1,32 +1,24 @@
 #!/bin/bash
+# Clean screen
 clear
+
+# Generate information file of the hardware.
 lshw > /tmp/lshw
-# DMIDECODE
 DMIDECODE=/tmp/dmidecode
 dmidecode > $DMIDECODE
-#tiempo de inicio del registro en Donator
+
+# Tiempo de inicio del registro en Donator.
 INITIAL_DONATOR_TIME=`date +%s`
 
-# Contraseña GPG
-GPGpassphrase=(password_here)
+# ↓ VARIABLES ↓
+LANG=`echo $LANG | head -n 1 | cut -c1-2` # OS language
+BIN_DIR="$( cd "$( dirname "$0" )" && pwd )" # bin dir
+HOME_DONATOR=`echo ${BIN_DIR} | sed -e 's/\/bin//g'` # home dir
+ETC_DIR=${HOME_DONATOR}/etc # etc dir
+GPGid= 			# ← YOUR GPG ID FOR EXEMPLE: 14D70D94
+GPGpassphrase=	# ← YOUR GPG PASSWORD HERE
 
-# Compruebo el idioma por defecto del SO/usr/share/donator/bin/
-LANG=`echo $LANG | head -n 1 | cut -c1-2`
-# Declaración de directorios
-BIN_DIR="$( cd "$( dirname "$0" )" && pwd )"
-HOME_DONATOR=`echo ${BIN_DIR} | sed -e 's/\/bin//g'`
-ETC_DIR=${HOME_DONATOR}/etc
-
-# Carga del fichero de configuración
-if [ -e ${ETC_DIR}/donator.cfg ]
-then
-        . ${ETC_DIR}/donator.cfg
-else
-        echo $configuracionNoOK 
-        exit 1
-fi
-
-#Carga el fichero de configuración personal
+# ↓ Load config.ini file ↓
 variables() {
 	if [[ `cat $variables_file | grep -o DISC=N` == "DISC=N" ]]
 	then
@@ -122,15 +114,15 @@ variables() {
 		SENDTOSERVER=Y
 	fi
 }
-. /usr/share/donator/bin/disclist.sh
-DIRCONINI=`mount | grep $USB_ALM | awk '{print $3}'`
-if [ -e $DIRCONINI/config.ini ]
+. /usr/share/donator/bin/disclist.sh # script to find some data USB
+DIRCONINI=`mount | grep $USB_ALM | awk '{print $3}'` # get the path of the data USB
+if [ -e $DIRCONINI/config.ini ] # if config.ini found on usb data, then
 then
 		variables_file="$DIRCONINI/config.ini"
-		variables
+		variables # load config.ini data
 else
 	variables_file="/usr/share/donator/etc/config.ini"
-	variables
+	variables # load config.ini data
 fi
 
 # Compruebo que existe el fichero con la traducción de los menús
@@ -164,27 +156,6 @@ then
 	echo $permisos
 	exit 1
 fi
-
-# Splash screen del programa
-tput clear
-tput setaf 1
-echo ""
-echo ""
-echo ""
-echo "                    .___                     __                               "
-echo "                  __| _/____   ____ _____  _/  |_ ___________                 "
-echo "                 / __ |/  _ \\ /    \\\\__  \\ \\   __|  _ \\_  __ \\                "
-echo "                / /_/ (  <_> )   |  \\/ __ \\_|  |(  <_> )  | \\/                "
-echo "                \\____ |\\____/|___|  (____  /|__| \\____/|__|                   "
-echo "                     \\/           \\/     \\/                                   "
-echo ""
-echo "$splash_1"
-tput sgr0
-tput cup 13 1
-#echo "$splash_2"
-#sleep 1; tput cup 13 49; echo "2"
-#sleep 1; tput cup 13 49; echo "1"
-#sleep 1
 
 # Ejecutamos la herramienta lshw y dejamos el resultado en un fichero
 # en el directorio temporal. Comprobamos que se ha generado.
@@ -356,7 +327,7 @@ XML="${XML}\n\t</serials>"
 XML="${XML}\n\t<estat>"
 DAT_ESTAT=`date +%Y-%m-%d`
 XML="${XML}\n\t\t<dat_estat>${DAT_ESTAT}</dat_estat>"
-XML="${XML}\n\t\t<version>1.0</version>"
+XML="${XML}\n\t\t<version>1.1</version>"
 ping www.google.es -c 1 >/dev/null 2>&1
 if [ $? -ne 0 ]
 then
@@ -536,7 +507,7 @@ do
 			# MODEL
 			XML="${XML}\n\t\t\t<model>"`smartctl --all -d scsi $Device_Name | grep "Vendor" | awk '{print $2}'`" "`smartctl --all -d scsi /dev/sdb | grep "Product" | cut -c 23-`"</model>"
 			# SERIAL
-			XML="${XML}\n\t\t\t<serial>"`lsblk --nodeps -o name,serial | grep $device_name | awk '{print $2}'`"</serial>"
+			XML="${XML}\n\t\t\t<serial>"`hdparm -I $Device_Name | grep 'Serial\ Number'e | awk '{print $3}'`"</serial>"
 			# Se busca la capacidad del disco
 			XML="${XML}\n\t\t\t<size>"`smartctl --all -d scsi $Device_Name | grep "User Capacity" | awk '{print $3}' | sed 's/[.,]//g'`"</size>"
 			# Se busca la unidad de capacidad del disco anterior
@@ -561,7 +532,7 @@ do
 		if [ -f $cert ];
 		then
 			gpg --batch --no-tty --decrypt $cert >/dev/null 2>/tmp/vace
-			if [[ `cat /tmp/vace | grep -o 14D70D94` == "14D70D94" ]]; then
+			if [[ `cat /tmp/vace | grep -o $GPGid` == $GPGid ]]; then
 				XML="${XML}`gpg --decrypt $cert 2>/dev/null`"
 				rm /tmp/vace
 			fi
@@ -868,7 +839,7 @@ else
 			tput cup 10 5
 			read -p "${menu_5_3} " USER
 			stty -echo
-			tput cup 12 5 	# Centra per pantalla
+			tput cup 12 5 	#CEntra per ppantalla
 			read -p "${menu_5_4} " PASS; echo
 			tput cup 13 5
 			read -p "${menu_5_5} " RPASS; echo
@@ -946,7 +917,7 @@ rm ${FITXER_LOGIN}.out
 fi
 mv ${FITXER}.out ${FITXER}
 
-# Enviar el fiche	ro al servidor VirtualBox:
+# Enviar el fichero al servidor VirtualBox:
 if [[ "$SENDTOSERVER" == *Y* ]]; then
 	clear
 	tput cup 11 5
@@ -958,7 +929,7 @@ if [[ "$SENDTOSERVER" == *Y* ]]; then
     else
 		tput cup 12 5
 		echo "Server found"
-		sshpass -p 5347849 scp ${FITXER} tecnico@192.168.2.2:/home/tecnico/XMLs/${FITXER} > /dev/null
+		sshpass -p 5347849 scp ${FITXER} tecnico@192.168.2.2:/home/tecnico/XMLs/${FITXER}
     fi
 	sleep 1
 fi
