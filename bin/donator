@@ -122,14 +122,14 @@ variables() {
 		SENDTOSERVER=Y
 	fi
 }
-. /usr/share/donator/bin/disclist.sh
+. ${BIN_DIR}/disclist.sh
 DIRCONINI=`mount | grep $USB_ALM | awk '{print $3}'`
 if [ -e $DIRCONINI/config.ini ]
 then
 		variables_file="$DIRCONINI/config.ini"
 		variables
 else
-	variables_file="/usr/share/donator/etc/config.ini"
+	variables_file="${ETC_DIR}/config.ini"
 	variables
 fi
 
@@ -367,7 +367,7 @@ fi
 
 
 # SMARTEST #
-while [[ `date | awk '{print $4}'` < ` cat /usr/share/donator/etc/data.ini | grep "after" | awk '{print $8}'| grep :` ]]
+while [[ `date | awk '{print $4}'` < ` cat ${ETC_DIR}/data.ini | grep "after" | awk '{print $8}'| grep :` ]]
 do
 	clear
 	tput cup 5 5
@@ -375,12 +375,12 @@ do
 	tput cup 6 5
 	echo "Now time: `date | awk '{print $4}'`"
 	tput cup 7 5
-	echo "End time: `cat /usr/share/donator/etc/data.ini | grep "after" | awk '{print $8}'| grep :`"
+	echo "End time: `cat ${ETC_DIR}/data.ini | grep "after" | awk '{print $8}'| grep :`"
 	sleep 1
 done
-if [[ `cat /usr/share/donator/etc/data.ini | grep -o "Test will"` == "Test will" ]]; then
+if [[ `cat ${ETC_DIR}/data.ini | grep -o "Test will"` == "Test will" ]]; then
 SMARTEST_CHECK="Yes"
-. /usr/share/donator/bin/disclist.sh
+. ${BIN_DIR}/disclist.sh
 DEVICE_CHECK=$DISC_DUR
 TYPE_CHECK_HDD=`smartctl -a /dev/sda | grep "# 1" | awk '{print $3}'`
 CHECK_HDD=`sudo smartctl -a /dev/sda | grep "# 1" | awk '{print $5, $6, $7}'`
