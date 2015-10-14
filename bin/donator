@@ -272,6 +272,7 @@ then
 fi
 
 
+get_serials() {
 # Buscamos la dirección MAC, si existen varias seleccionamos la primera
 ID=`grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' /tmp/lshw 2>/dev/null | sed s/://g | head -1`
 
@@ -302,6 +303,11 @@ INI=`grep "\*-disk" -n /tmp/lshw 2>/dev/null | head -1 | cut -d':' -f1`
 FIN=`tail -n +${INI} /tmp/lshw 2>/dev/null | grep "\*-" -n | tail -1 | cut -d':' -f1`
 SERIAL5=`tail -n +${INI} /tmp/lshw 2>/dev/null | head -n ${FIN} 2>/dev/null | grep serial | head -1 | awk {'print $2'}`
 
+}
+export -f get_serials
+
+
+generate_ids() {
 # Hacemos un checksum con los 5 número de serie y lo utilizamos como ID secundario
 ID2=`echo ${SERIAL1} ${SERIAL2} ${SERIAL3} ${SERIAL4} ${SERIAL5} | cksum | awk {'print $1'}`
 # Añadimos 0 hasta llegar a los 12 dígitos
@@ -347,7 +353,11 @@ XML="${XML}\n\t\t<serial_cpu>${SERIAL3}</serial_cpu>"
 XML="${XML}\n\t\t<serial_ram>${SERIAL4}</serial_ram>"
 XML="${XML}\n\t\t<serial_hdd>${SERIAL5}</serial_hdd>"
 XML="${XML}\n\t</serials>"
+}
+export -f generate_ids
 
+
+get_device_status() {
 #
 # ESTAT
 #####################################################################
@@ -364,8 +374,11 @@ then
 else
 	XML="${XML}\n\t\t<online>SI</online>"
 fi
+}
+export -f get_device_status
 
 
+run_smart_test() {
 # SMARTEST #
 while [[ `date | awk '{print $4}'` < ` cat ${ETC_DIR}/data.ini | grep "after" | awk '{print $8}'| grep :` ]]
 do
@@ -406,9 +419,12 @@ XML="${XML}\n\t\t\t<first_error_check>$FIRST_ERROR_HDD</first_error_check>"
 XML="${XML}\n\t\t</smartest>"
 
 	# FI SMARTEST #
-	
 XML="${XML}\n\t</estat>"
+}
+export -f run_smart_test
 
+
+get_device_components() {
 #
 # CARACTERISTIQUES
 #####################################################################
@@ -828,14 +844,25 @@ XML="${XML}\n\t\t\t<model_marca>${MODEL_MARCA}</model_marca>"
 XML="${XML}\n\t\t</marca>"
 
 XML="${XML}\n\t</caracteristiques>"
+}
+export -f get_device_components
 
 
+save_xml() {
+# Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
+END_DONATOR_TIME=`date +%s`
+XML="${XML}\n\t<END_DONATOR_TIME>${END_DONATOR_TIME}</END_DONATOR_TIME>"
+XML="${XML}\n</equip>"
 
 if [[ -n "$SAVE" && "$SAVE" == *Y* ]]
 	then
 	echo -e ${XML} >> ${HOME}/unsigned_${FITXER}
 fi
+}
+export -f save_xml
 
+
+publish_into_xsr() {
 if [[ -n "$OFFLINE" && "$OFFLINE" == *Y* ]]
 then
 	echo "Offline mode."
@@ -888,11 +915,11 @@ else
 		done
 	fi
 fi
+}
+export -f publish_into_xsr
 
-# Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
-END_DONATOR_TIME=`date +%s`
-XML="${XML}\n\t<END_DONATOR_TIME>${END_DONATOR_TIME}</END_DONATOR_TIME>"
-XML="${XML}\n</equip>"
+
+encrypt_xml() {
 # Importamos la clave con la que encriptaremos los ficheros
 gpg --batch --no-tty --yes --import ${ETC_DIR}/key.bin 2>/dev/null
 
@@ -918,7 +945,10 @@ echo -e ${XML} | gpg --batch --no-tty --output ${FITXER}.out --passphrase $GPGpa
 
 # Borramos las claves que hemos importado
 #gpg --batch --yes --delete-keys 10965135 2>/dev/null
+}
+export -f encrypt_xml
 
+set_file_permissions() {
 # En caso de que el programa se haya ejecutado con sudo
 # los permisos de los ficheros de gpg se han quedado con
 # root, por lo que los volvemos a dejar con su propietario
@@ -928,7 +958,10 @@ then
 	SUDO_GROUP=`groups ${SUDO_USER} | awk {'print $1'}`
 	chown -R ${SUDO_USER}:${SUDO_GROUP} ${HOME}/.gnupg
 fi
+}
+export -f set_file_permissions
 
+upload_file_to_sftp() {
 if [[ -z "$OFFLINE" || "$OFFLINE" == *N* ]]
 then
 	#
@@ -945,7 +978,10 @@ EOF
 rm ${FITXER_LOGIN}.out
 fi
 mv ${FITXER}.out ${FITXER}
+}
+export -f upload_file_to_sftp
 
+send_to_vbox_srv() {
 # Enviar el fiche	ro al servidor VirtualBox:
 if [[ "$SENDTOSERVER" == *Y* ]]; then
 	clear
@@ -962,6 +998,23 @@ if [[ "$SENDTOSERVER" == *Y* ]]; then
     fi
 	sleep 1
 fi
+}
+export -f send_to_vbox_srv
+
+function main() {
+
+    get_serials
+    generate_ids
+    get_device_status
+    run_smart_test
+    get_device_components
+    save_xml
+    publish_into_xsr
+    encrypt_xml
+    set_file_permissions
+    upload_file_to_sftp
+    send_to_vbox_srv
+
 # Pantalla final del programa
 tput clear
 tput setaf 1
@@ -997,3 +1050,8 @@ then
     fi
 fi
 exit 0
+}
+export -f main
+
+
+main "${@}"
