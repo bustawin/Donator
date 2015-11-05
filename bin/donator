@@ -310,17 +310,27 @@ do
 	ID2="0${ID2}"
 done
 
+# To make easier physical identification of the device we will
+# include IP address assigned by PXE Server on the filename
+# (only on network registration)
+# get interface used on default route
+iface=$(ip route | awk '/default/ { print $5 }')
+# get only host number of IPv4 address (mask /24)
+dhcp_host=$(ip addr show ${iface} | grep -Po 'inet \K[\d.]+' | awk -F. '{ print $4 }')
+# cosmetics: include a separator for improve file readability.
+if [ -n "{$dhcp_host}" ]; then dhcp_host=$(echo ${dhcp_host}_); fi
+
 # Si no existe un ID primeario, se usa el ID secundario como nombre de archivo
 if [ -n "${ID}" ]
 then
 	# Para diferenciar si el nombre del archivo proviene de un ID primario o secundario,
 	# en caso del primario se añade un 0 como dígito inicial del nombre.
-	FITXER=`echo 0${ID}.xml`
+	FITXER=`echo ${dhcp_host}0${ID}.xml`
 else
 	# En caso del secundario, se utiliza 000000000000 como id primerario y se añade un 1 como
 	# dígito inicial del nombre de archivo.
 	ID="000000000000"
-	FITXER=`echo 1${ID2}.xml`
+	FITXER=`echo ${dhcp_host}1${ID2}.xml`
 fi
 
 # Se crea la estructura y datos del XML y se van añadiendo a una variable
