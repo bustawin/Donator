@@ -959,7 +959,10 @@ if [[ "$SENDTOSERVER" == *Y* ]]; then
 		tput cup 12 5
 		echo "Server found"
 		sshpass -p 5347849 scp ${FITXER} tecnico@192.168.2.2:/home/tecnico/XMLs/${FITXER} > /dev/null
-    fi
+		if [[ -f ${HOME}/unsigned_${FITXER} ]]; then
+			sshpass -p 5347849 scp ${HOME}/unsigned_${FITXER} tecnico@192.168.2.2:/home/tecnico/XMLs/ > /dev/null
+		fi
+	fi
 	sleep 1
 fi
 # Pantalla final del programa
