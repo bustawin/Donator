@@ -839,6 +839,10 @@ XML="${XML}\n\t\t</marca>"
 
 XML="${XML}\n\t</caracteristiques>"
 
+# Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
+END_DONATOR_TIME=`date +%s`
+XML="${XML}\n\t<END_DONATOR_TIME>${END_DONATOR_TIME}</END_DONATOR_TIME>"
+XML="${XML}\n</equip>"
 
 
 if [[ -n "$SAVE" && "$SAVE" == *Y* ]]
@@ -899,10 +903,6 @@ else
 	fi
 fi
 
-# Calculamos el tiempo final de la donacion (el usuario ya no debe introducir mas datos y cerramos XML equipo)
-END_DONATOR_TIME=`date +%s`
-XML="${XML}\n\t<END_DONATOR_TIME>${END_DONATOR_TIME}</END_DONATOR_TIME>"
-XML="${XML}\n</equip>"
 # Importamos la clave con la que encriptaremos los ficheros
 gpg --batch --no-tty --yes --import ${ETC_DIR}/key.bin 2>/dev/null
 
