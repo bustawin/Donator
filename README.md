@@ -1,139 +1,112 @@
 # Donator
 ======================================================
-Donator v1.1  (Mayo, 2011)
-
-http://sf.net/projects/donator-xsr
-------------------------------------------------------
+Donator v6.3  (August, 2015)
 
 
 ______________________
-Documentación
+Documentation
 ======================
- 
- Este LEEME sirve para la configuración y uso de Donator
 
+ This README is for the configuration and use of Donator.
 
 ______________________
-Notas del Lanzamiento
+Release Notes
 ======================
 
- Por favor, lea el fichero changelog.txt para una lista completa de
- características que están disponibles en esta versión, así como mejoras
- y soluciones a bugs. 
-
+ #####6.3v:
+ * Structural change in the XML.
+   * Tag <version> added. (Shows the version that has been used for the
+   register)
+   * Tag in <hdd> edited, now displays the hard drive serial and model.
+   * Tag <erasetor> edited, now it only shows in the tag <hdd> when you
+   have executed Erasetor successful.
 
 _____________________
-Instalación
+Installation
 ======================
 
- Archivo binario para Debian/Ubuntu
- ==================================
+ #####Source code for Debian/Ubuntu
 
- El archivo binario viene totalmente configurado para poder ser utilizado con
- la plataforma de la "Xarxa de Suport a la Reutilització (XSR)".
+ Source code has been configurated to be used with eReuse.org.
+ 
+ To make it work, you will need to install the following repositories:
+ 
+ * [DeviceInventory](https://github.com/eReuse/DeviceInventory)
+ * [Smartest](https://github.com/eReuse/Smartest)
+ * [Erasetor](https://github.com/eReuse/Erasetor)
 
- Para instalar el binario en Debian/Ubuntu se debe ejecutar el siguiente
- comando:
+ 
+ To install the program on Debian/Ubuntu you will need to execute:
+````
+ sudo dpkg -i donator-1.1.deb
+````
 
-        dpkg -i donator-1.1.deb
-
-
- Archivo tar.gz
- ==============
-
- Este archivo se utilizará para poder utilizar donator con otras plataformas
- diferentes a la XSR. A continuación se explica como configurar donator para
- adecuarlo a otras plataformas.
- Una vez descargado el archivo tar.gz se descomprimirá en el directorio
- donde se quiere instalar la aplicación mediante el siguiente comando:
-
-	tar -xzvf <PATH>/<ARCHIVO>.tar.gz
-
- que creará un directorio donator cuyo contenido será el siguiente:
-
+  #####Installation from source code
+ 
+ Install the next files from the repository on "/usr/share/donator/*"
+````
    - donator
                 |- bin
                 |    |- donator
                 |- etc
+                     |- config.ini
                      |- donator.cfg
+                     |- key.bin
                      |- menu_ca.properties
                      |- menu_en.properties
                      |- menu_es.properties
                      |- vga.txt
+````
 
- Claves para encriptación
+ GPG keys to sing the XML files.
  ------------------------
- Para la encriptación de los ficheros XML se debe tener un par de claves
- pública/privada, para generarlas hay que seguir el siguiente proceso:
+ To encrypt XML files you must have a pair of public and private keys,
+ to generate them you need to use the following shell command:
 
- 1- Ejecutar el siguiente comando:
+ 1- Run the following command:
 
 	gpg --gen-key
 
- 2- Seleccionar la opción "DSA y RSA".
+ 2- Selecct the option "RSA and RSA (default)". (It is a good idea to
+ choose an expiration date instead of using the default for more
+ security, which is none.)
 
- 3- Elegir el tamaño de clave deseado.
+ 3- Choose the keysize. (Default keysize is 2048)
 
- 4- Elegir la  validez de la clave.
+ 4- Choose when the key will expire.
 
- 4- Confirmar y rellenar los datos de la entidad o persona.
- La clave se identificará por la dirección de correo electrónico, por lo que
- es importante recordarla. Por último introducir una contraseña, que será la
- que se utilizará para desencriptar los ficheros XML.
+ 4- Enter your name and email address. Remember this process is about
+ authenticating you as a real individual. For this reason, include your
+ real name. Do not use aliases or handles. Use the comment field to
+ include aliases or other information.
+ 
+ 5- At the confirmation prompt, enter the letter O to continue if all
+  entries are correct, or use the other options to fix any problems.
+ 
+ 6- Finally, enter a passphrase for your secret key. 
+ 
+ To export the secret key execute the following command to storage
+ the key:
+````
+ gpg --export-secret-keys your@email.dominion > key.bin
+````
+ To export the public key, execute the command:
+````
+ gpg --export <direccion_correo> > Public.key
+````
 
- Una vez finalizado el proceso se habrá creado el par de claves. La clave
- pública la incorporaremos al directorio etc del programa donator y se
- utilizará para el encriptado, mientras que la clave privada se dispondrá
- en el servidor que recibe los xml y que desencripta los mismos.
-
- Para conseguir la clave pública en un fichero que podamos adjuntar al
- software, ejecutaremos el siguiente comando:
-
-	gpg --export <direccion_correo>@<dominio> > key.bin
-
- Copiaremos el fichero key.bin que acabamos de crear en el directio etc de
- la instalación de donator.
-
- Fichero donator.cfg
- -------------------
- Por último, se debe editar el fichero donator.cfg del directorio etc
- modificando los  parámetros adecuadamente para que se adapte a la nueva
- plataforma:
-
-   * EMAIL=reutilitza@gmail.com
-	Cambiar por la dirección de correo electrónico que se ha utilizado para
-	crear el par de claves.
-
-   * HOST_SFTP=xsr.org.es
-	Cambiar por la IP o dirección del servidor de SFTP donde se enviarán
-	los ficheros XML con la aplicación.
-
-   * PORT_SFTP=donator
-	Cambiar por el puerto donde escucha el servidor de SFTP.
-
+ When you have been exported the private key successful, you need to 
+ intall it on the directory with the following steps:
+ 
+ 1. Move the key to `"/usr/share/donator/etc/key.bin"`.
+ 
+ 2. Edit the variables on `donator` source. Changing the var 
+ `GPGpassphrase=` to `GPGpassphrase=your_password`. Also, put it on the
+ source [Erasetor](https://github.com/eReuse/Erasetor).
+ 
 
 ______________________
-Uso de la aplicación
+Support
 ======================
 
- Para arrancar la aplicación se debe ejecutar el fichero donator situado en el
- directorio bin de la instalación.
-
- El programa muestra una cabecera con el mensaje Donator y verifica los
- componentes del equipo, creando un fichero con toda la información recopilada.
-
- A continuación se muestra un formulario donde se pide al usuario ingresar el 
- nombre de usuario y contraseña de la web de la XSR.
-
- Finalmente se intenta subir el fichero al servidor para su posterior alta en 
- la web. Una vez finalizado el proceso se muestra la carpeta donde se encuentra
- el fichero creado (en caso de fallo de la alta, el usuario podrá dar de alta
- el equipo manualmente) y abriendo la web de la XSR en el navegador web.
-
-______________________
-Soporte
-======================
-
- Cualquier problema con esta versión puede ser reportado en la siguiente
- dirección de correo electrónico:
- maxfer@gmail.com
+ For any support, please contact to : adrias@ereuse.org
