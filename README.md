@@ -2,8 +2,10 @@
 ======================================================
 Donator v6.3  (August, 2015)
 
- #####ATTENTION
+______________________
+ATTENTION
  This program is deprecated and not actively developed anymore
+======================
 
 ______________________
 Documentation
@@ -15,7 +17,7 @@ ______________________
 Release Notes
 ======================
 
- #####6.3v:
+ 6.3v:
  * Structural change in the XML.
    * Tag <version> added. (Shows the version that has been used for the
    register)
