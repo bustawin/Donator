@@ -2,7 +2,7 @@
 ======================================================
 Donator v6.3  (August, 2015)
 
- **This program is deprecated and not actively developed anymore**
+ **This program is deprecated and not actively developed anymore.**
 
 ______________________
 Documentation
